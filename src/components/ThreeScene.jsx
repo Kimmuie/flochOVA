@@ -1,5 +1,5 @@
 // src/components/ThreeScene.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
@@ -10,6 +10,30 @@ const CAMERA_CONFIG = {
   fov: 70,
   near: 0.2,
   far: 1000
+};
+
+// Camera positions for different objects
+const CAMERA_POSITIONS = {
+  cube: { 
+    position: { x: 0.05, y: 2.7, z: 0 }, 
+    rotation: { x: 0, y: 0, z: 0 } 
+  },
+  note1: { 
+    position: { x: 0.05, y: 2, z: 0 }, 
+    rotation: { x: -0.2, y: 0, z: 0 } 
+  },
+  note2: { 
+    position: { x: -0.5, y: 2.2, z: 0.3 }, 
+    rotation: { x: -0.1, y: -0.3, z: 0 } 
+  },
+  book: { 
+    position: { x: 0.3, y: 2.5, z: 0.2 }, 
+    rotation: { x: -0.15, y: 0.2, z: 0 } 
+  },
+  coffee: { 
+    position: { x: -0.2, y: 2.3, z: 0.4 }, 
+    rotation: { x: -0.1, y: -0.1, z: 0 } 
+  }
 };
 
 const MOUSE_CONFIG = {
@@ -24,11 +48,37 @@ const GLOW_CONFIG = {
   decay: 0
 };
 
+const TRANSITION_CONFIG = {
+  speed: 0.03, // Lower = slower transition
+  threshold: 0.01 // Distance threshold to stop transition
+};
+
 const GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
 
-export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) {
+const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) => {
+  const targetCameraConfig = useRef({
+    position: new THREE.Vector3(CAMERA_CONFIG.position.x, CAMERA_CONFIG.position.y, CAMERA_CONFIG.position.z),
+    rotation: new THREE.Euler(CAMERA_CONFIG.rotation.x, CAMERA_CONFIG.rotation.y, CAMERA_CONFIG.rotation.z)
+  });
+  const isTransitioning = useRef(false);
   const [currentCameraLock, setCurrentCameraLock] = useState("cube");
+  const lookAtTargetRef = useRef(null);
   const mountRef = useRef();
+
+  // Function to smoothly transition camera to target position
+  const transitionToPosition = (targetKey, targetObject = null) => {
+    const target = CAMERA_POSITIONS[targetKey];
+    if (!target) return;
+
+    // Immediately lock camera to the target object
+    if (targetObject) {
+      lookAtTargetRef.current = targetObject;
+    }
+
+    targetCameraConfig.current.position.set(target.position.x, target.position.y, target.position.z);
+    targetCameraConfig.current.rotation.set(target.rotation.x, target.rotation.y, target.rotation.z);
+    isTransitioning.current = true;
+  };
 
   useEffect(() => {
     // Scene setup
@@ -39,6 +89,11 @@ export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, on
       CAMERA_CONFIG.near,
       CAMERA_CONFIG.far
     );
+
+    // Clean previous canvas if any
+    while (mountRef.current.firstChild) {
+      mountRef.current.removeChild(mountRef.current.firstChild);
+    }
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
@@ -69,7 +124,6 @@ export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, on
     // Load model
     const loader = new GLTFLoader();
     let interactiveObject;
-    let bookObject = null;
     const originalMaterials = new Map();
 
     loader.load("/model.glb", (gltf) => {
@@ -79,9 +133,9 @@ export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, on
         if (child.isMesh) {
           originalMaterials.set(child, child.material.clone());
         }
-        // Find the Book object
+        // Set initial lookAt target based on current camera lock
         if (child.name && child.name.toLowerCase().includes(currentCameraLock)) {
-          bookObject = child;
+          lookAtTargetRef.current = child;
         }
       });
 
@@ -135,15 +189,21 @@ export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, on
             if (targetObject === interactiveObject) break;
           }
 
-          // Call the appropriate handler based on the object name
+          // Call the appropriate handler and transition camera based on the object name
           switch(objectName) {
             case "Note1":
+              setCurrentCameraLock("note1");
+              transitionToPosition("note1", targetObject);
               onNote1Click?.();
               break;
             case "Note2":
+              setCurrentCameraLock("note2");
+              transitionToPosition("note2", targetObject);
               onNote2Click?.();
               break;
             case "Book":
+              setCurrentCameraLock("book");
+              transitionToPosition("book", targetObject);
               onBookClick?.();
               break;
             case "Coffee":
@@ -202,21 +262,48 @@ export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, on
     // Animate
     const animate = () => {
       requestAnimationFrame(animate);
-      // Camera hover shift effect
-      const targetOffsetY = mouse.y * MOUSE_CONFIG.maxRotation;
-      const targetOffsetX = mouse.x * MOUSE_CONFIG.maxRotation;
+      
+      // Always make camera look at the current target if it exists
+      if (lookAtTargetRef.current) {
+        const targetPosition = new THREE.Vector3();
+        lookAtTargetRef.current.getWorldPosition(targetPosition);
+        camera.lookAt(targetPosition);
+      }
+      
+      // Handle camera transitions
+      if (isTransitioning.current) {
+        // Interpolate position only during transition
+        camera.position.lerp(targetCameraConfig.current.position, TRANSITION_CONFIG.speed);
 
-      // Smoothly interpolate camera position (only Y and X here)
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, CAMERA_CONFIG.position.y + targetOffsetY, 0.05);
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, CAMERA_CONFIG.position.x + targetOffsetX, 0.05);
+        // Check if transition is complete (only check position since rotation is handled by lookAt)
+        const positionDistance = camera.position.distanceTo(targetCameraConfig.current.position);
 
-      // Always look at the Book if it exists
-      if (bookObject) {
-        const bookPosition = new THREE.Vector3();
-        bookObject.getWorldPosition(bookPosition);
-        camera.lookAt(bookPosition);
+        if (positionDistance < TRANSITION_CONFIG.threshold) {
+          camera.position.copy(targetCameraConfig.current.position);
+          isTransitioning.current = false;
+        }
+      } else {
+        // Only apply mouse hover effects when not transitioning
+        const targetOffsetY = mouse.y * MOUSE_CONFIG.maxRotation;
+        const targetOffsetX = mouse.x * MOUSE_CONFIG.maxRotation;
+
+        // Get the base position for current camera lock
+        const basePosition = CAMERA_POSITIONS[currentCameraLock] || CAMERA_POSITIONS.cube;
+        
+        // Smoothly interpolate camera position with mouse offset
+        camera.position.x = THREE.MathUtils.lerp(
+          camera.position.x, 
+          basePosition.position.x + targetOffsetX, 
+          0.05
+        );
+        camera.position.y = THREE.MathUtils.lerp(
+          camera.position.y, 
+          basePosition.position.y + targetOffsetY, 
+          0.05
+        );
       }
 
+      // Handle object hovering and glow effects
       if (interactiveObject) {
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObject(interactiveObject, true);
@@ -287,5 +374,7 @@ export default function ThreeScene({ onNote1Click, onNote2Click, onBookClick, on
     };
   }, [currentCameraLock, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
 
-  return <div ref={mountRef} style={{ width: "100%", height: "100vh" }} />;
+  return <div className="w-full h-screen z-10" ref={mountRef}/>;
 }
+
+export default memo(ThreeScene);

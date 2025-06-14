@@ -1,0 +1,39 @@
+@font-face {
+  font-family: "inter";
+  src: url("../src/assets/fonts/Inter_Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "action";
+  src: url("../src/assets/fonts/Action_Man.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "butler";
+  src: url("../src/assets/fonts/Butler_Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@import "tailwindcss";
+
+@theme {
+  --font-inter: "inter", sans-serif;
+  --font-action: "action", sans-serif;
+  --font-butler: "butler", sans-serif;
+  --color-customWhite: #F7FCFE;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}

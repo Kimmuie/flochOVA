@@ -7,17 +7,20 @@ const Homepage = () => {
   const [openNote1, setOpenNote1] = useState(false);
   const [openNote2, setOpenNote2] = useState(false);
   const [openBook, setOpenBook] = useState(false);
-  const [openCoffee, setOpenCoffee] = useState(false);
+  const [backHome, setBackHome] = useState(true);
 
   const handleNote1Click = () => {
-    setOpenNote1(!openNote1);
+    setBackHome(false);
+    setOpenNote1(true);
   };
 
   const handleNote2Click = () => {
-    setOpenNote2(!openNote2);
+    setBackHome(false);
+    setOpenNote2(true);
   };
 
   const handleBookClick = () => {
+    setBackHome(false);
     setOpenBook(true);
   };
 
@@ -25,15 +28,23 @@ const Homepage = () => {
     window.open("https://coff.ee/kimmue", "_blank");
   };
 
+  const handleBackToHome = () => {
+    setOpenNote1(false);
+    setOpenNote2(false);
+    setOpenBook(false);
+    setBackHome(true);
+  };
+
   return (
     <>
-      <Note1 openNote1={openNote1} onClose={handleNote1Click} />
-      <Note2 openNote2={openNote2} onClose={handleNote2Click} />
+      <Note1 openNote1={openNote1} onClose={handleBackToHome} />
+      <Note2 openNote2={openNote2} onClose={handleBackToHome} />
       <ThreeScene 
         onNote1Click={handleNote1Click}
         onNote2Click={handleNote2Click}
         onBookClick={handleBookClick}
         onCoffeeClick={handleCoffeeClick}
+        onBackHome={backHome}
       />
     </>
   );

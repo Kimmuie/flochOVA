@@ -5,7 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 // Configuration
 const CAMERA_CONFIG = {
-  position: { x: 0.05, y: 2.7, z: 0 },
+  position: { x: 0.85, y: 2.7, z: 0 },
   rotation: { x: 0, y: 0, z: 0 },
   fov: 70,
   near: 0.2,
@@ -19,20 +19,20 @@ const CAMERA_POSITIONS = {
     rotation: { x: 0, y: 0, z: 0 } 
   },
   note1: { 
-    position: { x: 0.05, y: 2, z: 0 }, 
-    rotation: { x: -0.2, y: 0, z: 0 } 
+    position: { x: -0.7, y: 2.4, z: 0 }, 
+    rotation: { x: 0, y: 0, z: 0 } 
   },
   note2: { 
-    position: { x: -0.5, y: 2.2, z: 0.3 }, 
-    rotation: { x: -0.1, y: -0.3, z: 0 } 
+    position: { x: -0.7, y: 2.5, z: -0.1 }, 
+    rotation: { x: 0, y: 0, z: 0 } 
   },
   book: { 
     position: { x: 0.3, y: 2.5, z: 0.2 }, 
-    rotation: { x: -0.15, y: 0.2, z: 0 } 
+    rotation: { x: 0, y: 0, z: 0 } 
   },
   coffee: { 
     position: { x: -0.2, y: 2.3, z: 0.4 }, 
-    rotation: { x: -0.1, y: -0.1, z: 0 } 
+    rotation: { x: 0, y: 0, z: 0 } 
   }
 };
 
@@ -53,9 +53,9 @@ const TRANSITION_CONFIG = {
   threshold: 0.01 // Distance threshold to stop transition
 };
 
-const GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
+let GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
 
-const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) => {
+const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, onBackHome }) => {
   const targetCameraConfig = useRef({
     position: new THREE.Vector3(CAMERA_CONFIG.position.x, CAMERA_CONFIG.position.y, CAMERA_CONFIG.position.z),
     rotation: new THREE.Euler(CAMERA_CONFIG.rotation.x, CAMERA_CONFIG.rotation.y, CAMERA_CONFIG.rotation.z)
@@ -64,6 +64,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) 
   const [currentCameraLock, setCurrentCameraLock] = useState("cube");
   const lookAtTargetRef = useRef(null);
   const mountRef = useRef();
+  const sceneObjectsRef = useRef({});
 
   // Function to smoothly transition camera to target position
   const transitionToPosition = (targetKey, targetObject = null) => {
@@ -79,6 +80,14 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) 
     targetCameraConfig.current.rotation.set(target.rotation.x, target.rotation.y, target.rotation.z);
     isTransitioning.current = true;
   };
+
+  useEffect(() => {
+    if (onBackHome) {
+      GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
+      setCurrentCameraLock("cube");
+      transitionToPosition("cube");
+    }
+  }, [onBackHome]);
 
   useEffect(() => {
     // Scene setup
@@ -111,7 +120,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) 
     );
 
     // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    scene.add(new THREE.AmbientLight(0x9BC09C, 0.6));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
@@ -192,16 +201,19 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) 
           // Call the appropriate handler and transition camera based on the object name
           switch(objectName) {
             case "Note1":
+              GLOWABLE_OBJECTS = [];
               setCurrentCameraLock("note1");
               transitionToPosition("note1", targetObject);
               onNote1Click?.();
               break;
             case "Note2":
+              GLOWABLE_OBJECTS = [];
               setCurrentCameraLock("note2");
               transitionToPosition("note2", targetObject);
               onNote2Click?.();
               break;
             case "Book":
+              GLOWABLE_OBJECTS = [];
               setCurrentCameraLock("book");
               transitionToPosition("book", targetObject);
               onBookClick?.();
@@ -213,7 +225,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) 
         }
       }
     };
-
+  
     // Glow logic
     const createGlowMaterial = (originalMaterial) => {
       return new THREE.MeshStandardMaterial({
@@ -371,6 +383,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick }) 
       renderer.dispose();
       scene.clear();
       originalMaterials.clear();
+      sceneObjectsRef.current = {};
     };
   }, [currentCameraLock, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
 

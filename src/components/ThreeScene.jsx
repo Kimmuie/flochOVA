@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, memo } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useParams, useNavigate } from 'react-router-dom';
 
 // Configuration
 const CAMERA_CONFIG = {
@@ -27,11 +28,11 @@ const CAMERA_POSITIONS = {
     rotation: { x: 0, y: 0, z: 0 } 
   },
   book: { 
-    position: { x: 0.3, y: 2.5, z: 0.2 }, 
+    position: { x: -0.3, y: 2.6, z: 0 }, 
     rotation: { x: 0, y: 0, z: 0 } 
   },
-  coffee: { 
-    position: { x: -0.2, y: 2.3, z: 0.4 }, 
+  bookcenter: { 
+    position: { x: -0.3, y: 2.6, z: 0 }, 
     rotation: { x: 0, y: 0, z: 0 } 
   }
 };
@@ -56,12 +57,14 @@ const TRANSITION_CONFIG = {
 let GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
 
 const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, onBackHome }) => {
+  const navigate = useNavigate();
   const targetCameraConfig = useRef({
     position: new THREE.Vector3(CAMERA_CONFIG.position.x, CAMERA_CONFIG.position.y, CAMERA_CONFIG.position.z),
     rotation: new THREE.Euler(CAMERA_CONFIG.rotation.x, CAMERA_CONFIG.rotation.y, CAMERA_CONFIG.rotation.z)
   });
   const isTransitioning = useRef(false);
   const [currentCameraLock, setCurrentCameraLock] = useState("cube");
+  const [enableCursorFollow, setEnableCursorFollow] = useState(true);
   const lookAtTargetRef = useRef(null);
   const mountRef = useRef();
   const sceneObjectsRef = useRef({});
@@ -79,12 +82,16 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
     targetCameraConfig.current.position.set(target.position.x, target.position.y, target.position.z);
     targetCameraConfig.current.rotation.set(target.rotation.x, target.rotation.y, target.rotation.z);
     isTransitioning.current = true;
+    if (targetKey === "book"){
+      setTimeout(() => navigate('/manga'), 3000);
+    }
   };
 
   useEffect(() => {
     if (onBackHome) {
       GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
       setCurrentCameraLock("cube");
+      setEnableCursorFollow(true);
       transitionToPosition("cube");
     }
   }, [onBackHome]);
@@ -215,7 +222,8 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
             case "Book":
               GLOWABLE_OBJECTS = [];
               setCurrentCameraLock("book");
-              transitionToPosition("book", targetObject);
+              transitionToPosition("book", null); // Don't set lookAt target for book
+              setEnableCursorFollow(false);
               onBookClick?.();
               break;
             case "Coffee":
@@ -294,8 +302,8 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
           camera.position.copy(targetCameraConfig.current.position);
           isTransitioning.current = false;
         }
-      } else {
-        // Only apply mouse hover effects when not transitioning
+      } else if (enableCursorFollow) {
+        // Only apply mouse hover effects when not transitioning AND cursor following is enabled
         const targetOffsetY = mouse.y * MOUSE_CONFIG.maxRotation;
         const targetOffsetX = mouse.x * MOUSE_CONFIG.maxRotation;
 
@@ -385,7 +393,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
       originalMaterials.clear();
       sceneObjectsRef.current = {};
     };
-  }, [currentCameraLock, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
+  }, [currentCameraLock, enableCursorFollow, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
 
   return <div className="w-full h-screen z-10" ref={mountRef}/>;
 }

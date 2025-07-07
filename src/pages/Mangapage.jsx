@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getFirestore, collection, addDoc, Timestamp, doc, getDoc, updateDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../components/firebase';
 
 const InteractiveBook = () => {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(0);
   const [MaxPage, setMaxPage] = useState(100);
   const [hovered, setHovered] = useState(0);
+  const [openComment, setOpenComment] = useState(false);
+  const [nameComment, setNameComment] = useState("");
+  const [msgComment, setmsgComment] = useState("");
   const [flippingPage, setFlippingPage] = useState(null); // 'left' or 'right'
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Get book ID from URL params or use a default
+  const { bookId } = useParams();
+  const currentBookId = bookId || 'chapter_1';
 
   const pages = [
     {
@@ -38,16 +52,6 @@ const InteractiveBook = () => {
           <p className="mb-4 text-base leading-relaxed text-gray-700">
             For having lived in Westminster—how many years now? over twenty,—one feels even in the midst of the traffic, or waking at night, Clarissa was positive, a particular hush, or solemnity.
           </p>
-          
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            The uproar; the carriages, motor cars, omnibuses, vans, sandwich men shuffling and swinging; brass bands; barrel organs; in the triumph and the jingle and the strange high singing of some aeroplane overhead was what she loved; life; London; this moment of June.
-          </p>
-          
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            For it was the middle of June. The War was over, except for some one like Mrs. Foxcroft at the Embassy last night eating her heart out because that nice boy was killed.
-          </p>
-          
-          <div className="absolute bottom-6 right-6 text-sm text-gray-500">3</div>
         </div>
       )
     },
@@ -62,16 +66,6 @@ const InteractiveBook = () => {
           <p className="mb-4 text-base leading-relaxed text-gray-700">
             "I love walking in London," said Mrs. Dalloway. "Really it's better than walking in the country."
           </p>
-          
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            They had gone up into the smoking-room one evening. And she had felt suddenly, I cannot go through with it. I cannot commit this act of treachery against the human soul.
-          </p>
-          
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            Yet it was a splendid morning too. Like the pulse of a perfect heart, life struck straight through the streets.
-          </p>
-          
-          <div className="absolute bottom-6 right-6 text-sm text-gray-500">4</div>
         </div>
       )
     },
@@ -87,6 +81,65 @@ const InteractiveBook = () => {
       )
     }
   ];
+
+  // Load comments from Firestore
+  useEffect(() => {
+    const commentsRef = collection(db, 'books', currentBookId, 'comments');
+    const q = query(commentsRef, orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const commentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setComments(commentsData);
+    });
+
+    return () => unsubscribe();
+  }, [currentBookId]);
+
+  // Submit comment to Firestore
+  const handleSubmitComment = async () => {
+    if (!nameComment.trim() || !msgComment.trim()) {
+      setError("Please fill in both name and comment");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const commentsRef = collection(db, 'books', currentBookId, 'comments');
+      await addDoc(commentsRef, {
+        name: nameComment.trim(),
+        message: msgComment.trim(),
+        createdAt: Timestamp.now(),
+        page: currentPage + 1,
+        like: 0,
+        dislike: 0,
+      });
+
+      // Clear form
+      setNameComment("");
+      setmsgComment("");
+      setOpenComment(false);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      setError("Failed to add comment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
 
   const flipLeftPage = () => {
     if (currentPage > 0 && !flippingPage) {
@@ -111,14 +164,20 @@ const InteractiveBook = () => {
   return (
     <div className="w-screen h-screen bg-gradient-to-b from-customDarkBlue to-customDarkBlue flex items-center justify-between overflow-hidden">
       <div className='bg-customBlue w-xs h-screen border-r-1 border-r-customWhite flex items-center flex-col'>
-        <button className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue font-action font-semibold text-lg'>Back Home</button>
+        <button 
+          onClick={() => navigate('/home')}
+          className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue font-action font-semibold text-lg'>
+            Back Home
+        </button>
         <button className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue'>
           <span className='font-action font-semibold text-lg '>Chapter 1</span>
           <span className='font-action font-semibold text-2xl'>The Dedication</span>
         </button>
         <div className='flex flex-row gap-1 mt-4'>
           <button className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❮❮</button>
-          <button className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❮</button>
+          <button 
+            onClick={flipLeftPage}
+            className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❮</button>
           <input
             type="text"
             placeholder="1"
@@ -127,7 +186,9 @@ const InteractiveBook = () => {
             className="text-center w-20 border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue"
             required
           />
-          <button className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❯</button>
+          <button 
+            onClick={flipRightPage}
+            className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❯</button>
           <button className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❯❯</button>
         </div>
         <div className='flex flex-row items-center justify-center mt-4'>
@@ -182,6 +243,7 @@ const InteractiveBook = () => {
           </div>
         </div>
       </div>
+      
       {/* Book Container */}
       <div className="book-container relative w-197 h-174 border-8 ">
         {/* Left Page Behind */}
@@ -223,10 +285,103 @@ const InteractiveBook = () => {
             </div>
         </div>
       </div>
+      
+      {/* Comment Section */}
       <div className='bg-customBlue w-xs h-screen border-l-1 border-l-customWhite flex items-center flex-col'>
-        <span className='flex flex-col py-1 px-11 mt-4 rounded-xl text-customWhite font-action font-semibold text-xl'>Comment section</span>
-        <div className='bg-customWhite w-75 rounded h-full'></div>
-        <button className='flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-4 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl'>Add Comments</button>
+        <span className='flex flex-col py-1 px-11 mt-4 rounded-xl text-customWhite font-action font-semibold text-xl'>
+          Comment Section ({comments.length})
+        </span>
+        
+        {/* Comments Display */}
+        <div className='bg-customWhite w-75 rounded h-full mt-4 p-4 overflow-y-auto'>
+          {comments.length === 0 ? (
+            <p className='text-gray-500 text-center mt-8'>No comments yet. Be the first to comment!</p>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className='mb-4 px-1 border-b border-gray-200 last:border-b-0'>
+                <div className='flex justify-between items-start mb-2'>
+                  <h4 className='font-semibold text-customBlue'>{comment.name}</h4>
+                  <div className='text-xs text-gray-500 text-end'>
+                    <span>{formatTimestamp(comment.createdAt)}</span>
+                    <br />
+                    <span>Page {comment.page}</span>
+                  </div>
+                </div>
+                <p className='text-gray-700 text-sm leading-relaxed'>{comment.message}</p>
+                <div className='flex flex-row gap-1 mt-1 justify-end'>
+                  <button className='cursor-pointer border-1 rounded border-customBlack px-1 flex flex-row gap-1'>
+                    <img src="/like_black.svg" width="15" height="15" />  
+                    <span>{comment.like}</span>
+                  </button>  
+                  <button className='cursor-pointer border-1 rounded border-customBlack px-1 flex flex-row gap-1'>
+                    <img src="/dislike_black.svg" width="15" height="15" />  
+                    <span>{comment.dislike}</span>
+                  </button>        
+                </div>            
+                <div className='h-0.25 w-full bg-gray-300 mt-2'></div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Error Message */}
+        {error && (
+          <div className='text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
+        )}
+        
+        {/* Comment Form */}
+        {openComment ? (
+          <>
+            <div className='w-75 rounded flex flex-col mt-2 animate-swipeUP'>
+              <div className='flex flex-row'>
+                <input
+                  type="text"
+                  placeholder="Enter Your Name"
+                  maxLength={50}
+                  value={nameComment}
+                  onChange={(e) => setNameComment(e.target.value)}
+                  className="text-left w-full h-sm border-2 border-customWhite bg-customBlue cursor-pointer py-1 px-3 rounded-sm text-customWhite placeholder-gray-300"
+                  required
+                />
+                <button 
+                  onClick={() => {
+                    setOpenComment(false);
+                    setError("");
+                    setNameComment("");
+                    setmsgComment("");
+                  }}
+                  className='flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 px-3 h-sm ml-2 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl'>
+                    X
+                </button>
+              </div>
+              <textarea
+                placeholder="Enter Your Comment"
+                maxLength={500}
+                value={msgComment}
+                onChange={(e) => setmsgComment(e.target.value)}
+                className="text-left w-full h-32 border-2 border-customWhite bg-customBlue cursor-pointer py-1 px-3 rounded-sm text-customWhite placeholder-gray-300 mt-2 resize-none"
+                required
+              />
+              <div className='text-right text-customWhite text-xs mt-1'>
+                {msgComment.length}/500
+              </div>
+            </div>
+            <button 
+              onClick={handleSubmitComment}
+              disabled={loading}
+              className={`z-50 flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-1 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}>
+              {loading ? 'Sending...' : 'Send Comment'}
+            </button>
+          </>
+        ) : (
+          <button 
+            onClick={() => setOpenComment(true)}
+            className='flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-4 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl'>
+              Add Comment
+          </button>
+        )}
       </div>
     </div>
   );

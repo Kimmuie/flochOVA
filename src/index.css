@@ -27,16 +27,15 @@
   --font-butler: "butler", sans-serif;
   --color-customWhite: #F7F7F7;
   --color-customBlack: #333333;
-  --color-customBlack: #000000;
   --color-customDarkBlue: #202435;
   --color-customBlue: #2B334E;
   --color-customYellow: #FFC44D;
 
-  --animate-fadeDown: fadeDown 0.3s ease-in-out;
-  @keyframes fadeDown {
+  --animate-swipeUP: swipeUP 0.3s ease-in-out;
+  @keyframes swipeUP {
     0% {
-      transform: translateY(-20px);
-      opacity: 0;
+      transform: translateY(50px);
+      opacity: 0.5;
     }
     100% {
       transform: translateY(0);

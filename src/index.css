@@ -30,6 +30,8 @@
   --color-customDarkBlue: #202435;
   --color-customBlue: #2B334E;
   --color-customYellow: #FFC44D;
+  --color-customRed: #FF1E00;
+  --color-customGreen: #77B254;
 
   --animate-swipeUP: swipeUP 0.3s ease-in-out;
   @keyframes swipeUP {
@@ -52,6 +54,25 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-customWhite);
+  z-index: 10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-customDarkBlue);
+  border-right: 1px solid var(--color-customWhite);
+  z-index: 10;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4f4747;
 }
 
   .book-container {

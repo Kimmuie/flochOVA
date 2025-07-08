@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getFirestore, collection, addDoc, Timestamp, doc, getDoc, updateDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, increment, collection, addDoc, Timestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../components/firebase';
 
 const InteractiveBook = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(0);
-  const [MaxPage, setMaxPage] = useState(100);
+  const [currentComment, setCurrentComment] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [openComment, setOpenComment] = useState(false);
   const [nameComment, setNameComment] = useState("");
@@ -15,11 +15,57 @@ const InteractiveBook = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const [userInteractions, setUserInteractions] = useState({});
+  const [cooldowns, setCooldowns] = useState({});
+  const [showTagBox, setShowTagBox] = useState(false);
+  const [selectedTag, setSelectedTag] = useState('Top Comments');
+  const [filteredComments, setFilteredComments] = useState([]);
+  const filterTagBoxRef = useRef(null);
+  const commentRef = useRef(null);
+  const tagOptions = ['Top Comments', 'Worst Comments', 'Newest Comments', 'Oldest Comments'];
   // Get book ID from URL params or use a default
   const { bookId } = useParams();
   const currentBookId = bookId || 'chapter_1';
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterTagBoxRef.current && !filterTagBoxRef.current.contains(event.target)) {
+        setShowTagBox(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleDivComments = () => {
+    if (commentRef.current) {
+      commentRef.current.focus();
+      commentRef.current.select();
+    }
+  };
+
+
+    const handleTagSelect = async (value, type) => {
+    if (type === 'tag') {
+      setSelectedTag(value);
+      setShowTagBox(false);
+    }
+    setShowTagBox(false);
+  };
+
+  const handleChangeInput = (e) => {
+    const value = e.target.value;
+    const overValue = 0
+    if (!/^\d*$/.test(value)) return;
+    if (value > (comments.length / 11) + 1) {
+      overValue = (comments.length / 11) + 1
+      setCurrentComment(overValue);
+    } else {
+      setCurrentComment(value);
+    }
+  };
   const pages = [
     {
       type: 'cover',
@@ -129,7 +175,64 @@ const InteractiveBook = () => {
     } finally {
       setLoading(false);
     }
+    setSelectedTag("Newest Comments");
   };
+
+  const handleLikeDislike = async (commentId, action) => {
+    if (cooldowns[commentId]) return; // Prevent spamming
+
+    setCooldowns(prev => ({ ...prev, [commentId]: true }));
+
+    try {
+      const commentRef = doc(db, 'books', currentBookId, 'comments', commentId);
+      const currentInteraction = userInteractions[commentId];
+
+      let updates = {};
+      let newInteraction = action;
+
+      if (currentInteraction === action) {
+        updates[action] = increment(-1);
+        newInteraction = null;
+      } else if (currentInteraction && currentInteraction !== action) {
+        updates[currentInteraction] = increment(-1);
+        updates[action] = increment(1);
+      } else {
+        updates[action] = increment(1);
+      }
+
+      await updateDoc(commentRef, updates);
+
+      setUserInteractions(prev => ({
+        ...prev,
+        [commentId]: newInteraction
+      }));
+    } catch (error) {
+      console.error("Error updating like/dislike:", error);
+    } finally {
+      setTimeout(() => {
+        setCooldowns(prev => ({ ...prev, [commentId]: false }));
+      }, 300);
+    }
+  };
+
+  useEffect(() => {
+  let result = [...comments];
+  // Status Filter
+  if (selectedTag === 'Top Comments') {
+    result.sort((a, b) => (b.like - b.dislike) - (a.like - a.dislike));
+  } else if (selectedTag === 'Worst Comments') {
+    result.sort((a, b) => (b.dislike - b.like) - (a.dislike - a.like));
+  } else if (selectedTag === 'Newest Comments') {
+    result.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+  } else if (selectedTag === 'Oldest Comments') {
+    result.sort((a, b) => a.createdAt.seconds - b.createdAt.seconds);
+  }
+  const startIndex = currentComment * 10;
+  const endIndex = startIndex + 10;
+  const paginatedResult = result.slice(startIndex, endIndex);
+
+  setFilteredComments(paginatedResult);
+}, [selectedTag, currentComment, comments]);
 
   // Format timestamp for display
   const formatTimestamp = (timestamp) => {
@@ -139,6 +242,16 @@ const InteractiveBook = () => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  const flipLeftMax = () => {
+    if (currentPage > 0 && !flippingPage) {
+      setFlippingPage('left');
+      setTimeout(() => {
+        setCurrentPage(0);
+        setTimeout(() => setFlippingPage(null), 100);
+      }, 400);
+    }
   };
 
   const flipLeftPage = () => {
@@ -161,6 +274,16 @@ const InteractiveBook = () => {
     }
   };
 
+    const flipRightMax = () => {
+    if (currentPage < pages.length - 1 && !flippingPage) {
+      setFlippingPage('right');
+      setTimeout(() => {
+        setCurrentPage(pages.length);
+        setTimeout(() => setFlippingPage(null), 100);
+      }, 400);
+    }
+  };
+
   return (
     <div className="w-screen h-screen bg-gradient-to-b from-customDarkBlue to-customDarkBlue flex items-center justify-between overflow-hidden">
       <div className='bg-customBlue w-xs h-screen border-r-1 border-r-customWhite flex items-center flex-col'>
@@ -174,22 +297,22 @@ const InteractiveBook = () => {
           <span className='font-action font-semibold text-2xl'>The Dedication</span>
         </button>
         <div className='flex flex-row gap-1 mt-4'>
-          <button className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❮❮</button>
+          <button onClick={flipLeftMax} className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage > 0 && !flippingPage ? 'page-clickable' : currentPage === 0 ? 'page-disabled opacity-50' : ''}`}>❮❮</button>
           <button 
             onClick={flipLeftPage}
-            className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❮</button>
+            className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage > 0 && !flippingPage ? 'page-clickable' : currentPage === 0 ? 'page-disabled opacity-50' : ''}`}>❮</button>
           <input
             type="text"
             placeholder="1"
             maxLength={8}
-            value={`${currentPage + 1}/${MaxPage}`}
+            value={`${currentPage + 1}-${currentPage + 2}/${pages.length}`}
             className="text-center w-20 border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue"
             required
           />
           <button 
             onClick={flipRightPage}
-            className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❯</button>
-          <button className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>❯❯</button>
+            className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 1 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯</button>
+          <button onClick={flipRightMax} className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 1 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯❯</button>
         </div>
         <div className='flex flex-row items-center justify-center mt-4'>
           <img src="/views.svg" width="30" height="30" alt="views" />
@@ -291,14 +414,78 @@ const InteractiveBook = () => {
         <span className='flex flex-col py-1 px-11 mt-4 rounded-xl text-customWhite font-action font-semibold text-xl'>
           Comment Section ({comments.length})
         </span>
-        
+        <div className='flex flex-row mt-4 gap-1'>
+          <button 
+            onClick={() => {
+              if (currentComment == 1) {
+                setCurrentComment(currentComment - 1);
+              }
+            }}
+            className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
+              ${currentComment == 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+          ❮</button>
+          <div onClick={handleDivComments}
+              className='flex flex-row justify-center items-center border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
+            <input
+              type="text"
+              maxLength={2}
+              value={currentComment + 1}
+              ref={commentRef}
+              onChange={handleChangeInput}
+              className='w-2 outline-none text-end'
+              onClick={handleDivComments}
+            />
+           /{Math.floor(comments.length / 11) + 1}
+          </div>
+          <button 
+            onClick={() => {
+              const maxPage = Math.floor(comments.length / 11);
+              if (currentComment < maxPage) {
+                setCurrentComment(currentComment + 1);
+              }
+            }}  
+            className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
+              ${currentComment >= Math.floor(comments.length / 11) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+          ❯</button>
+          <div className="relative flex justify-end w-30">
+            <button 
+              onClick={() => setShowTagBox(prev => !prev)}
+              className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
+              <img src="/filter-on-light.svg" width="25" height="15" />
+            </button>
+            {showTagBox &&
+              <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-35 bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50"
+                ref={filterTagBoxRef}>
+                <div className="absolute -top-2 right-7 w-3 h-3 bg-customBlue rotate-45 border-s-2 border-t-2 border-s-customWhite border-t-customWhite"></div>
+                {tagOptions.map((tag, index) => (
+                  <label key={index} className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={selectedTag === tag}
+                      onChange={() => handleTagSelect(tag, 'tag')}
+                      className="appearance-none w-3 h-3 rounded-full border-2 border-customWhite checked:bg-customWhite checked:border-transparent cursor-pointer"
+                    />
+                    <span className="font-prompt text-customWhite text-xs"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleTagSelect(tag, 'tag');
+                      }}>
+                      {tag}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            }
+          </div>
+        </div>
         {/* Comments Display */}
-        <div className='bg-customWhite w-75 rounded h-full mt-4 p-4 overflow-y-auto'>
+        <div className='bg-customWhite w-75 rounded h-full mt-4 py-4 pl-2 pr-2 overflow-y-auto'>
           {comments.length === 0 ? (
             <p className='text-gray-500 text-center mt-8'>No comments yet. Be the first to comment!</p>
           ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className='mb-4 px-1 border-b border-gray-200 last:border-b-0'>
+            filteredComments.map((comment) => (
+              <div key={comment.id} className='mb-4 pl-1 border-b border-gray-200 last:border-b-0'>
                 <div className='flex justify-between items-start mb-2'>
                   <h4 className='font-semibold text-customBlue'>{comment.name}</h4>
                   <div className='text-xs text-gray-500 text-end'>
@@ -309,12 +496,20 @@ const InteractiveBook = () => {
                 </div>
                 <p className='text-gray-700 text-sm leading-relaxed'>{comment.message}</p>
                 <div className='flex flex-row gap-1 mt-1 justify-end'>
-                  <button className='cursor-pointer border-1 rounded border-customBlack px-1 flex flex-row gap-1'>
-                    <img src="/like_black.svg" width="15" height="15" />  
+                  <button  
+                    onClick={() => handleLikeDislike(comment.id, 'like')}
+                    className={`cursor-pointer rounded border-customBlack px-1 flex flex-row gap-1 ${userInteractions[comment.id] === 'like' ? 'border-customGreen border-3 text-customGreen' : 'border-customBlack border-1 text-customBlack'} `}>
+                    {userInteractions[comment.id] === 'like' ?
+                    (<img src="/like_green.svg" width="15" height="15" />):
+                    (<img src="/like_black.svg" width="15" height="15" />)}  
                     <span>{comment.like}</span>
                   </button>  
-                  <button className='cursor-pointer border-1 rounded border-customBlack px-1 flex flex-row gap-1'>
-                    <img src="/dislike_black.svg" width="15" height="15" />  
+                  <button 
+                    onClick={() => handleLikeDislike(comment.id, 'dislike')}
+                    className={`cursor-pointer rounded border-customBlack px-1 flex flex-row gap-1 ${userInteractions[comment.id] === 'dislike' ? 'border-customRed border-3 text-customRed' : 'border-customBlack border-1 text-customBlack'} `}>
+                    {userInteractions[comment.id] === 'dislike' ?
+                    (<img src="/dislike_red.svg" width="15" height="15" />):
+                    (<img src="/dislike_black.svg" width="15" height="15" />)}  
                     <span>{comment.dislike}</span>
                   </button>        
                 </div>            

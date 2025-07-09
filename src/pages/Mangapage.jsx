@@ -9,6 +9,11 @@ const InteractiveBook = () => {
   const [currentStar, setCurrentStar] = useState(0);
   const [previousStar, setPreviousStar] = useState(0);
   const [cooldownStar, setCooldownStar] = useState(false);
+  const [allStar1, setAllStar1] = useState(0);
+  const [allStar2, setAllStar2] = useState(0);
+  const [allStar3, setAllStar3] = useState(0);
+  const [allStar4, setAllStar4] = useState(0);
+  const [allStar5, setAllStar5] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [currentComment, setCurrentComment] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -184,10 +189,11 @@ const handleChangePage = (e) => {
     }
   }, [currentBookId]);
 
-  // Load comments from Firestore
+  // Load from Firestore
   useEffect(() => {
     const commentsRef = collection(db, 'books', currentBookId, 'comments');
     const viewsDocRef = doc(db, 'books', currentBookId, 'stat', 'views');
+    const starsDocRef = doc(db, 'books', currentBookId, 'stat', 'stars');
 
     const commentsQuery = query(commentsRef, orderBy('createdAt', 'desc'));
 
@@ -205,9 +211,20 @@ const handleChangePage = (e) => {
       }
     });
 
+    const unsubscribeStars = onSnapshot(starsDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setAllStar1(docSnap.data().star1);
+        setAllStar2(docSnap.data().star2);
+        setAllStar3(docSnap.data().star3);
+        setAllStar4(docSnap.data().star4);
+        setAllStar5(docSnap.data().star5);
+      }
+    });
+
     return () => {
       unsubscribeComments();
       unsubscribeViews();
+      unsubscribeStars();
     };
   }, [currentBookId]);
 
@@ -215,7 +232,7 @@ const handleSelectStar = async (star) => {
   if (cooldownStar || star === currentStar) return;
   setCooldownStar(true);
   try {
-    const starDocRef = doc(db, 'books', currentBookId, 'stat', 'star');
+    const starDocRef = doc(db, 'books', currentBookId, 'stat', 'stars');
     const oldField = `star${previousStar}`;
     const field = `star${star}`;
     const docSnap = await getDoc(starDocRef);
@@ -368,7 +385,7 @@ const handleSelectStar = async (star) => {
   };
 
   const flipRightPage = () => {
-    if (currentPage < pages.length - 1 && !flippingPage) {
+    if (currentPage < pages.length - 2 && !flippingPage) {
       setFlippingPage('right');
       setTimeout(() => {
         setCurrentPage(currentPage + 2);
@@ -378,13 +395,22 @@ const handleSelectStar = async (star) => {
   };
 
     const flipRightMax = () => {
-    if (currentPage < pages.length - 1 && !flippingPage) {
+    if (currentPage < pages.length - 2 && !flippingPage) {
       setFlippingPage('right');
       setTimeout(() => {
-        setCurrentPage(pages.length);
+        setCurrentPage(pages.length - 2);
         setTimeout(() => setFlippingPage(null), 100);
       }, 400);
     }
+  };
+
+  const totalRatings = allStar1 + allStar2 + allStar3 + allStar4 + allStar5;
+  const totalScore = (1 * allStar1) + (2 * allStar2) + (3 * allStar3) + (4 * allStar4) + (5 * allStar5);
+  const averageRating = totalRatings === 0 ? 0 : totalScore / totalRatings;
+
+  const calculatePercentage = (starCount) => {
+    if (totalRatings === 0) return 0;
+    return (starCount / totalRatings) * 100;
   };
 
   return (
@@ -419,8 +445,8 @@ const handleSelectStar = async (star) => {
           </div>
           <button 
             onClick={flipRightPage}
-            className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 1 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯</button>
-          <button onClick={flipRightMax} className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 1 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯❯</button>
+            className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 2 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯</button>
+          <button onClick={flipRightMax} className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 2 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯❯</button>
         </div>
         <div className='flex flex-row items-center justify-center mt-4'>
           <img src="/views.svg" width="30" height="30" alt="views" />
@@ -448,30 +474,62 @@ const handleSelectStar = async (star) => {
         <div className='flex flex-col items-between justify-center mt-auto mb-10 gap-2'>
           <div className='flex flex-row items-center justify-between'>
             <span className='font-action text-customWhite font-semibold text-2xl'>5</span>
-            <div>
-              <div className='absolute bg-customYellow w-60 h-3 rounded-full'></div>
-              <div className='bg-customWhite w-60 h-3 rounded-full'></div>
+            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                  style={{ width: `${calculatePercentage(allStar5)}%` }}>
+                <div className={`absolute -top-5 bg-customYellow ${!allStar5 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                  {allStar5}
+                </div>
+              </div>
             </div>
           </div>
           <div className='flex flex-row items-center justify-between'>
             <span className='font-action text-customWhite font-semibold text-2xl'>4</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full'></div>
+            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                  style={{ width: `${calculatePercentage(allStar4)}%` }}>
+                <div className={`absolute -top-5 bg-customYellow ${!allStar4 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                  {allStar4}
+                </div>
+              </div>
+            </div>
           </div>
           <div className='flex flex-row items-center justify-between'>
             <span className='font-action text-customWhite font-semibold text-2xl'>3</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full'></div>
+            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                  style={{ width: `${calculatePercentage(allStar3)}%` }}>
+                <div className={`absolute -top-5 bg-customYellow ${!allStar3 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                  {allStar3}
+                </div>
+              </div>
+            </div>
           </div>
           <div className='flex flex-row items-center justify-between'>
             <span className='font-action text-customWhite font-semibold text-2xl'>2</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full'></div>
+            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                  style={{ width: `${calculatePercentage(allStar2)}%` }}>
+                <div className={`absolute -top-5 bg-customYellow ${!allStar2 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                  {allStar2}
+                </div>
+              </div>
+            </div>
           </div>
           <div className='flex flex-row items-center justify-between gap-4'>
             <span className='font-action text-customWhite font-semibold text-2xl'>1</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full'></div>
+            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                  style={{ width: `${calculatePercentage(allStar1)}%` }}>
+                <div className={`absolute -top-5 bg-customYellow ${!allStar1 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                  {allStar1}
+                </div>
+              </div>
+            </div>
           </div>
           <div className='flex flex-row items-center justify-center'>
             <img src="/star-full.svg" width="50" height="50" alt="star"/>
-            <span className='font-action text-customWhite font-medium text-4xl ml-3'>4.89</span>
+            <span className='font-action text-customWhite font-medium text-4xl ml-3'>{averageRating.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -501,7 +559,7 @@ const handleSelectStar = async (star) => {
         {/* Right Page */}
         <div className={`page h-full w-sm right-page z-10 ${flippingPage === 'right' ? 'flipping-right' : ''}`}>
             <div 
-                className={`bg-customWhite page-content ${currentPage < pages.length - 1 && !flippingPage ? 'page-clickable' : 'page-disabled'}`}
+                className={`bg-customWhite page-content ${currentPage < pages.length - 2 && !flippingPage ? 'page-clickable' : 'page-disabled'}`}
                 onClick={flipRightPage}
             >
                 {pages[currentPage + 1 ]?.content}

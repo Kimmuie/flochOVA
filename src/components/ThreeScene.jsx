@@ -127,7 +127,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
     );
 
     // Lights
-    scene.add(new THREE.AmbientLight(0x9BC09C, 0.6));
+    scene.add(new THREE.AmbientLight(0x2B334E, 0.6));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);

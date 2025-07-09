@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, updateDoc, increment, collection, addDoc, Timestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, increment, collection, addDoc, Timestamp, query, orderBy, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../components/firebase';
 
 const InteractiveBook = () => {
   const navigate = useNavigate();
+  const [views, setViews] = useState(0);
+  const [currentStar, setCurrentStar] = useState(0);
+  const [previousStar, setPreviousStar] = useState(0);
+  const [cooldownStar, setCooldownStar] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [currentComment, setCurrentComment] = useState(0);
   const [hovered, setHovered] = useState(0);
+  const [hoveredFilter, setHoveredFilter] = useState(false);
   const [openComment, setOpenComment] = useState(false);
   const [nameComment, setNameComment] = useState("");
   const [msgComment, setmsgComment] = useState("");
@@ -21,6 +26,7 @@ const InteractiveBook = () => {
   const [selectedTag, setSelectedTag] = useState('Top Comments');
   const [filteredComments, setFilteredComments] = useState([]);
   const filterTagBoxRef = useRef(null);
+  const pageRef = useRef(null);
   const commentRef = useRef(null);
   const tagOptions = ['Top Comments', 'Worst Comments', 'Newest Comments', 'Oldest Comments'];
   // Get book ID from URL params or use a default
@@ -46,8 +52,14 @@ const InteractiveBook = () => {
     }
   };
 
+  const handleDivPages = () => {
+    if (pageRef.current) {
+      pageRef.current.focus();
+      pageRef.current.select();
+    }
+  };
 
-    const handleTagSelect = async (value, type) => {
+  const handleTagSelect = async (value, type) => {
     if (type === 'tag') {
       setSelectedTag(value);
       setShowTagBox(false);
@@ -61,11 +73,32 @@ const InteractiveBook = () => {
     if (!/^\d*$/.test(value)) return;
     if (value > (comments.length / 11) + 1) {
       overValue = (comments.length / 11) + 1
-      setCurrentComment(overValue);
+      setCurrentComment(overValue - 1);
     } else {
-      setCurrentComment(value);
+      setCurrentComment(value - 1);
     }
   };
+
+const handleChangePage = (e) => {
+  let value = e.target.value;
+
+  if (!/^\d*$/.test(value)) return; // only allow numbers
+
+  value = parseInt(value, 10);
+  if (isNaN(value)) return;
+
+  if (value % 2 === 0) {
+    value -= 1; // make sure it's odd
+  }
+
+  if (value >= pages.length) {
+    const overValue = pages.length;
+    setCurrentPage(overValue - 2);
+  } else {
+    setCurrentPage(value - 1);
+  }
+};
+
   const pages = [
     {
       type: 'cover',
@@ -127,13 +160,38 @@ const InteractiveBook = () => {
       )
     }
   ];
+  // Add Views
+  useEffect(() => {
+    const addView = async () => {
+      const statDocRef = doc(db, 'books', currentBookId, 'stat', 'views');
+
+      const statSnap = await getDoc(statDocRef);
+      if (statSnap.exists()) {
+        // increment view count
+        await updateDoc(statDocRef, {
+          views: increment(1)
+        });
+      } else {
+        // create the document
+        await setDoc(statDocRef, {
+          views: 1
+        });
+      }
+    };
+
+    if (currentBookId) {
+      addView();
+    }
+  }, [currentBookId]);
 
   // Load comments from Firestore
   useEffect(() => {
     const commentsRef = collection(db, 'books', currentBookId, 'comments');
-    const q = query(commentsRef, orderBy('createdAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const viewsDocRef = doc(db, 'books', currentBookId, 'stat', 'views');
+
+    const commentsQuery = query(commentsRef, orderBy('createdAt', 'desc'));
+
+    const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
       const commentsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -141,8 +199,53 @@ const InteractiveBook = () => {
       setComments(commentsData);
     });
 
-    return () => unsubscribe();
+    const unsubscribeViews = onSnapshot(viewsDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setViews(docSnap.data().views);
+      }
+    });
+
+    return () => {
+      unsubscribeComments();
+      unsubscribeViews();
+    };
   }, [currentBookId]);
+
+const handleSelectStar = async (star) => {
+  if (cooldownStar || star === currentStar) return;
+  setCooldownStar(true);
+  try {
+    const starDocRef = doc(db, 'books', currentBookId, 'stat', 'star');
+    const oldField = `star${previousStar}`;
+    const field = `star${star}`;
+    const docSnap = await getDoc(starDocRef);
+    
+    if (!docSnap.exists()) {
+      await setDoc(starDocRef, {
+        star1: 0,
+        star2: 0,
+        star3: 0,
+        star4: 0,
+        star5: 0,
+        [field]: 1
+      });
+    } else if (currentStar != 0) {
+      await updateDoc(starDocRef, {
+        [oldField]: increment(-1),
+        [field]: increment(1)
+      });
+    } else {
+      await updateDoc(starDocRef, {
+        [field]: increment(1)
+      });
+    }
+    setPreviousStar(star);
+    setCurrentStar(star);
+    setCooldownStar(false);
+  } catch (error) {
+    console.error("Error updating star rating:", error);
+  }
+};
 
   // Submit comment to Firestore
   const handleSubmitComment = async () => {
@@ -160,7 +263,7 @@ const InteractiveBook = () => {
         name: nameComment.trim(),
         message: msgComment.trim(),
         createdAt: Timestamp.now(),
-        page: currentPage + 1,
+        page: `${currentPage + 1}-${currentPage + 2}`,
         like: 0,
         dislike: 0,
       });
@@ -301,14 +404,19 @@ const InteractiveBook = () => {
           <button 
             onClick={flipLeftPage}
             className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage > 0 && !flippingPage ? 'page-clickable' : currentPage === 0 ? 'page-disabled opacity-50' : ''}`}>❮</button>
-          <input
-            type="text"
-            placeholder="1"
-            maxLength={8}
-            value={`${currentPage + 1}-${currentPage + 2}/${pages.length}`}
-            className="text-center w-20 border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue"
-            required
-          />
+          <div onClick={handleDivPages}
+              className='flex flex-row justify-center items-center border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
+            <input
+              type="text"
+              maxLength={3}
+              value={`${currentPage + 1}-${currentPage + 2}`}
+              ref={pageRef}
+              onChange={handleChangePage}
+              className='w-6 outline-none text-end'
+              onClick={handleDivPages}
+            />
+           /{pages.length}
+          </div>
           <button 
             onClick={flipRightPage}
             className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage < pages.length - 1 ? 'page-clickable' : 'page-disabled opacity-50'}`}>❯</button>
@@ -316,7 +424,7 @@ const InteractiveBook = () => {
         </div>
         <div className='flex flex-row items-center justify-center mt-4'>
           <img src="/views.svg" width="30" height="30" alt="views" />
-          <span className='font-action text-customWhite font-medium text-xl ml-2'>321 Views</span>
+          <span className='font-action text-customWhite font-medium text-xl ml-2'>{views} Views</span>
         </div>
         <div className="flex gap-1 mt-4">
           {[1, 2, 3, 4, 5].map((star) => (
@@ -324,11 +432,12 @@ const InteractiveBook = () => {
               key={star}
               onMouseEnter={() => setHovered(star)}
               onMouseLeave={() => setHovered(0)}
-              className="relative cursor-pointer"
+              className="relative"
             >
               <img
+                onClick={() => handleSelectStar(star)}
                 src="/star-full.svg"
-                className={`absolute ${hovered >= star ? "opacity-100" : "opacity-0"}`}
+                className={`absolute ${(hovered || currentStar) >= star ? "opacity-100" : "opacity-0"} ${cooldownStar ? "cursor-progress" : "cursor-pointer"}`}
                 width="35"
                 height="30"
               />
@@ -368,7 +477,7 @@ const InteractiveBook = () => {
       </div>
       
       {/* Book Container */}
-      <div className="book-container relative w-197 h-174 border-8 ">
+      <div className="book-container relative w-197 h-174.75 rounded-xs border-8 border-customWhite">
         {/* Left Page Behind */}
         <div className="page h-full w-sm left-page z-0">
             <div className="bg-customWhite page-content">
@@ -388,7 +497,7 @@ const InteractiveBook = () => {
             </div>
         </div>
         {/* Book Spine */}
-        <div className="book-spine bg-amber-800"></div>
+        <div className="book-spine bg-customBlack"></div>
         {/* Right Page */}
         <div className={`page h-full w-sm right-page z-10 ${flippingPage === 'right' ? 'flipping-right' : ''}`}>
             <div 
@@ -450,8 +559,15 @@ const InteractiveBook = () => {
           <div className="relative flex justify-end w-30">
             <button 
               onClick={() => setShowTagBox(prev => !prev)}
+              onMouseEnter={() => setHoveredFilter(true)}
+              onMouseLeave={() => setHoveredFilter(false)}
               className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
-              <img src="/filter-on-light.svg" width="25" height="15" />
+              <img
+                src="/filter_blue.svg"
+                className={`absolute ${hoveredFilter ? "opacity-100" : "opacity-0"}`}
+                width="25" height="15"
+              />
+              <img src="/filter_white.svg" width="25" height="15" />
             </button>
             {showTagBox &&
               <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-35 bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50"

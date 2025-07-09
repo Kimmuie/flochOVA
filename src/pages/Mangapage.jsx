@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc, increment, collection, addDoc, Timestamp, query, orderBy, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../components/firebase';
+import chapter_1Json from '../chapters/chapter_1.json';
+import chapter_2Json from '../chapters/chapter_2.json';
 
 const InteractiveBook = () => {
   const navigate = useNavigate();
@@ -27,21 +29,27 @@ const InteractiveBook = () => {
   const [error, setError] = useState("");
   const [userInteractions, setUserInteractions] = useState({});
   const [cooldowns, setCooldowns] = useState({});
+  const [showChapterBox, setShowChapterBox] = useState(false);
   const [showTagBox, setShowTagBox] = useState(false);
   const [selectedTag, setSelectedTag] = useState('Top Comments');
+  const [selectedChapter, setSelectedChapter] = useState('CH.1 : The Hatred');
   const [filteredComments, setFilteredComments] = useState([]);
   const filterTagBoxRef = useRef(null);
+  const filterChapterBoxRef = useRef(null);
   const pageRef = useRef(null);
   const commentRef = useRef(null);
   const tagOptions = ['Top Comments', 'Worst Comments', 'Newest Comments', 'Oldest Comments'];
+  const chapterOptions = ['CH.1 : The Hatred', 'CH.2 : The asdasd', 'CH.3 : The asdasd', 'CH.4 : The Dedication'];
   // Get book ID from URL params or use a default
   const { bookId } = useParams();
-  const currentBookId = bookId || 'chapter_1';
+  const currentBookId = `chapter_${selectedChapter.match(/\d+/)?.[0] || 1}`;
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterTagBoxRef.current && !filterTagBoxRef.current.contains(event.target)) {
         setShowTagBox(false);
+      } else if (filterChapterBoxRef.current && !filterChapterBoxRef.current.contains(event.target)) {
+        setShowChapterBox(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -68,16 +76,20 @@ const InteractiveBook = () => {
     if (type === 'tag') {
       setSelectedTag(value);
       setShowTagBox(false);
+    } else if (type === 'chapter'){
+      setSelectedChapter(value);
+      setShowChapterBox(false);
+      setCurrentPage(0);
+      setCurrentStar(0);
     }
     setShowTagBox(false);
   };
 
   const handleChangeInput = (e) => {
     const value = e.target.value;
-    const overValue = 0
     if (!/^\d*$/.test(value)) return;
     if (value > (comments.length / 11) + 1) {
-      overValue = (comments.length / 11) + 1
+      const overValue = (comments.length / 11) + 1
       setCurrentComment(overValue - 1);
     } else {
       setCurrentComment(value - 1);
@@ -104,67 +116,39 @@ const handleChangePage = (e) => {
   }
 };
 
-  const pages = [
-    {
-      type: 'cover',
-      content: (
-        <div className="absolute">
-            <img src="./FlochOVA1.jpg" alt="image" className="h-full w-full object-cover"/>
-        </div>
-      )
-    },
-    {
-      type: 'page',
-      content: (
-        <div className="absolute">
-            <img src="./FlochOVA2.jpg" alt="image" className="h-full w-full object-cover"/>
-        </div>
-      )
-    },
-    {
-      type: 'page',
-      content: (
-        <div className="absolute">
-            <img src="./FlochOVA1.jpg" alt="image" className="h-full w-full object-cover"/>
-        </div>
-      )
-    },
-    {
-      type: 'page',
-      content: (
-        <div className="p-6">
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            For having lived in Westminster—how many years now? over twenty,—one feels even in the midst of the traffic, or waking at night, Clarissa was positive, a particular hush, or solemnity.
-          </p>
-        </div>
-      )
-    },
-    {
-      type: 'page',
-      content: (
-        <div className="p-6">
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            "Good-morning to you, Clarissa!" said Hugh, rather extravagantly, for they had known each other as children. "Where are you off to?"
-          </p>
-          
-          <p className="mb-4 text-base leading-relaxed text-gray-700">
-            "I love walking in London," said Mrs. Dalloway. "Really it's better than walking in the country."
-          </p>
-        </div>
-      )
-    },
-    {
-      type: 'page',
-      content: (
-        <div className="p-6 flex flex-col items-center justify-center text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">The End</h2>
-          <p className="text-lg text-gray-600 mb-6">Thank you for reading</p>
-          <div className="text-4xl">📖</div>
-          <p className="text-sm text-gray-500 mt-4">Virginia Woolf's Mrs. Dalloway</p>
-        </div>
-      )
+  const chapterMap = {
+    chapter_1: chapter_1Json,
+    chapter_2: chapter_2Json,
+    chapter_3: chapter_1Json,
+    chapter_4: chapter_1Json
+  };
+  const rawPages = chapterMap[currentBookId];
+  const pages = rawPages.map(page => {
+    if (page.image) {
+      return {
+        type: page.type,
+        content: (
+          <div className="absolute">
+            <img src={page.image} alt="image" className="h-full w-full object-cover" />
+          </div>
+        )
+      };
+    } else if (page.text) {
+      return {
+        type: page.type,
+        content: (
+          <div className="p-6">
+            {page.text.map((t, i) => (
+              <p key={i} className="mb-4 text-base leading-relaxed text-gray-700">{t}</p>
+            ))}
+          </div>
+        )
+      };
+    } else {
+      return { type: page.type, content: <div /> };
     }
-  ];
+  });
+
   // Add Views
   useEffect(() => {
     const addView = async () => {
@@ -213,12 +197,19 @@ const handleChangePage = (e) => {
 
     const unsubscribeStars = onSnapshot(starsDocRef, (docSnap) => {
       if (docSnap.exists()) {
-        setAllStar1(docSnap.data().star1);
-        setAllStar2(docSnap.data().star2);
-        setAllStar3(docSnap.data().star3);
-        setAllStar4(docSnap.data().star4);
-        setAllStar5(docSnap.data().star5);
-      }
+        const data = docSnap.data() || {};
+        setAllStar1(data.star1 || 0);
+        setAllStar2(data.star2 || 0);
+        setAllStar3(data.star3 || 0);
+        setAllStar4(data.star4 || 0);
+        setAllStar5(data.star5 || 0);
+      }else {
+      setAllStar1(0);
+      setAllStar2(0);
+      setAllStar3(0);
+      setAllStar4(0);
+      setAllStar5(0);
+  }
     });
 
     return () => {
@@ -421,10 +412,38 @@ const handleSelectStar = async (star) => {
           className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue font-action font-semibold text-lg'>
             Back Home
         </button>
-        <button className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue'>
-          <span className='font-action font-semibold text-lg '>Chapter 1</span>
-          <span className='font-action font-semibold text-2xl'>The Dedication</span>
+        <div className="relative flex justify-end">
+        <button               
+          ref={filterChapterBoxRef}
+          onClick={() => setShowChapterBox(prev => !prev)}
+          className='w-60 flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1  mt-4 rounded-xl text-customWhite hover:text-customBlue'>
+          <span className='font-action font-semibold text-lg '>{currentBookId.replace('chapter_', 'Chapter ')}</span>
+          <span className='font-action font-semibold text-2xl'>{selectedChapter.split(':')[1]?.trim() || ''}</span>
         </button>
+          {showChapterBox &&
+            <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-full bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
+              <div className="absolute -top-2 w-3 left-1/2 -translate-x-1/2 h-3 bg-customBlue rotate-45 border-s-2 border-t-2 border-s-customWhite border-t-customWhite"></div>
+              {chapterOptions.map((tag, index) => (
+                <label key={index} className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={selectedChapter === tag}
+                    onChange={() => handleTagSelect(tag, 'chapter')}
+                    className="appearance-none w-3 h-3 rounded-full border-2 border-customWhite checked:bg-customWhite checked:border-transparent cursor-pointer"
+                  />
+                  <span className="font-prompt text-customWhite text-xs"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleTagSelect(tag, 'chapter');
+                    }}>
+                    {tag}
+                  </span>
+                </label>
+              ))}
+            </div>
+          }
+        </div>
         <div className='flex flex-row gap-1 mt-4'>
           <button onClick={flipLeftMax} className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue ${currentPage > 0 && !flippingPage ? 'page-clickable' : currentPage === 0 ? 'page-disabled opacity-50' : ''}`}>❮❮</button>
           <button 
@@ -615,7 +634,8 @@ const handleSelectStar = async (star) => {
               ${currentComment >= Math.floor(comments.length / 11) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
           ❯</button>
           <div className="relative flex justify-end w-30">
-            <button 
+            <button                
+              ref={filterTagBoxRef}
               onClick={() => setShowTagBox(prev => !prev)}
               onMouseEnter={() => setHoveredFilter(true)}
               onMouseLeave={() => setHoveredFilter(false)}
@@ -628,8 +648,7 @@ const handleSelectStar = async (star) => {
               <img src="/filter_white.svg" width="25" height="15" />
             </button>
             {showTagBox &&
-              <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-35 bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50"
-                ref={filterTagBoxRef}>
+              <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-35 bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
                 <div className="absolute -top-2 right-7 w-3 h-3 bg-customBlue rotate-45 border-s-2 border-t-2 border-s-customWhite border-t-customWhite"></div>
                 {tagOptions.map((tag, index) => (
                   <label key={index} className="flex items-center gap-1 cursor-pointer">

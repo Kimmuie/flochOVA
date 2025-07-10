@@ -16,6 +16,7 @@ const InteractiveBook = () => {
   const [allStar3, setAllStar3] = useState(0);
   const [allStar4, setAllStar4] = useState(0);
   const [allStar5, setAllStar5] = useState(0);
+  const [closeLeftBar, setCloseLeftBar] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [currentComment, setCurrentComment] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -39,7 +40,7 @@ const InteractiveBook = () => {
   const pageRef = useRef(null);
   const commentRef = useRef(null);
   const tagOptions = ['Top Comments', 'Worst Comments', 'Newest Comments', 'Oldest Comments'];
-  const chapterOptions = ['CH.1 : The Hatred', 'CH.2 : The asdasd', 'CH.3 : The asdasd', 'CH.4 : The Dedication'];
+  const chapterOptions = ['CH.1 : The Hatred', 'CH.2 : The Subsitute', 'CH.3 : The Realization', 'CH.4 : The Dedication'];
   // Get book ID from URL params or use a default
   const { bookId } = useParams();
   const currentBookId = `chapter_${selectedChapter.match(/\d+/)?.[0] || 1}`;
@@ -48,7 +49,8 @@ const InteractiveBook = () => {
     function handleClickOutside(event) {
       if (filterTagBoxRef.current && !filterTagBoxRef.current.contains(event.target)) {
         setShowTagBox(false);
-      } else if (filterChapterBoxRef.current && !filterChapterBoxRef.current.contains(event.target)) {
+      }
+      if (filterChapterBoxRef.current && !filterChapterBoxRef.current.contains(event.target)) {
         setShowChapterBox(false);
       }
     }
@@ -405,13 +407,18 @@ const handleSelectStar = async (star) => {
   };
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-b from-customDarkBlue to-customDarkBlue flex items-center justify-between overflow-hidden">
-      <div className='bg-customBlue w-xs h-screen border-r-1 border-r-customWhite flex items-center flex-col'>
-        <button 
-          onClick={() => navigate('/home')}
-          className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue font-action font-semibold text-lg'>
-            Back Home
-        </button>
+    <div className="w-screen h-screen bg-gradient-to-b from-customDarkBlue to-customDarkBlue flex items-center justify-center md:justify-center xl:justify-center 2xl:justify-between  overflow-hidden">
+      <div className={`bg-customBlue w-xs h-screen border-r-1 border-r-customWhite flex items-center flex-col z-10 absolute 2xl:relative left-0 transition ${closeLeftBar ? "-translate-x-70 2xl:-translate-x-0" : ""}`}>
+        <div className='flex flex-row'>
+          <button 
+            onClick={() => navigate('/home')}
+            className='flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-11 mt-4 rounded-xl text-customWhite hover:text-customBlue font-action font-semibold text-lg'>
+              Back Home
+          </button>
+          <button onClick={() => setCloseLeftBar(prev =>!prev)} className="absolute border-y-2  border-l-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 mt-4 right-0 rounded-tl-xl rounded-bl-xl text-customWhite hover:text-customBlue cursor-pointer font-semibold text-lg flex md:flex xl:flex 2xl:hidden ">
+          {closeLeftBar ? "❯" :"❮"}
+          </button>
+          </div>
         <div className="relative flex justify-end">
         <button               
           ref={filterChapterBoxRef}
@@ -490,58 +497,60 @@ const handleSelectStar = async (star) => {
             </div>
           ))}
         </div>
-        <div className='flex flex-col items-between justify-center mt-auto mb-10 gap-2'>
-          <div className='flex flex-row items-center justify-between'>
-            <span className='font-action text-customWhite font-semibold text-2xl'>5</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
-              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
-                  style={{ width: `${calculatePercentage(allStar5)}%` }}>
-                <div className={`absolute -top-5 bg-customYellow ${!allStar5 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
-                  {allStar5}
+        <div className='flex flex-col items-between justify-center mt-4 2xl:mt-auto mb-10 gap-2'>
+          <div className='flex flex-col mt-4 md:flex xl:hidden 2xl:flex'>
+            <div className='flex flex-row items-center justify-between'>
+              <span className='font-action text-customWhite font-semibold text-2xl'>5</span>
+              <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+                <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                    style={{ width: `${calculatePercentage(allStar5)}%` }}>
+                  <div className={`absolute -top-5 bg-customYellow ${!allStar5 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                    {allStar5}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className='flex flex-row items-center justify-between'>
-            <span className='font-action text-customWhite font-semibold text-2xl'>4</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
-              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
-                  style={{ width: `${calculatePercentage(allStar4)}%` }}>
-                <div className={`absolute -top-5 bg-customYellow ${!allStar4 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
-                  {allStar4}
+            <div className='flex flex-row items-center justify-between'>
+              <span className='font-action text-customWhite font-semibold text-2xl'>4</span>
+              <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+                <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                    style={{ width: `${calculatePercentage(allStar4)}%` }}>
+                  <div className={`absolute -top-5 bg-customYellow ${!allStar4 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                    {allStar4}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className='flex flex-row items-center justify-between'>
-            <span className='font-action text-customWhite font-semibold text-2xl'>3</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
-              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
-                  style={{ width: `${calculatePercentage(allStar3)}%` }}>
-                <div className={`absolute -top-5 bg-customYellow ${!allStar3 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
-                  {allStar3}
+            <div className='flex flex-row items-center justify-between'>
+              <span className='font-action text-customWhite font-semibold text-2xl'>3</span>
+              <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+                <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                    style={{ width: `${calculatePercentage(allStar3)}%` }}>
+                  <div className={`absolute -top-5 bg-customYellow ${!allStar3 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                    {allStar3}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className='flex flex-row items-center justify-between'>
-            <span className='font-action text-customWhite font-semibold text-2xl'>2</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
-              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
-                  style={{ width: `${calculatePercentage(allStar2)}%` }}>
-                <div className={`absolute -top-5 bg-customYellow ${!allStar2 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
-                  {allStar2}
+            <div className='flex flex-row items-center justify-between'>
+              <span className='font-action text-customWhite font-semibold text-2xl'>2</span>
+              <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+                <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                    style={{ width: `${calculatePercentage(allStar2)}%` }}>
+                  <div className={`absolute -top-5 bg-customYellow ${!allStar2 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                    {allStar2}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className='flex flex-row items-center justify-between gap-4'>
-            <span className='font-action text-customWhite font-semibold text-2xl'>1</span>
-            <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
-              <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
-                  style={{ width: `${calculatePercentage(allStar1)}%` }}>
-                <div className={`absolute -top-5 bg-customYellow ${!allStar1 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
-                  {allStar1}
+            <div className='flex flex-row items-center justify-between gap-4'>
+              <span className='font-action text-customWhite font-semibold text-2xl'>1</span>
+              <div className='bg-customWhite w-60 h-3 rounded-full relative group'>
+                <div className='bg-customYellow h-3 rounded-full relative flex justify-center'
+                    style={{ width: `${calculatePercentage(allStar1)}%` }}>
+                  <div className={`absolute -top-5 bg-customYellow ${!allStar1 && "hidden"} text-customBlue font-bold text-xs px-2 py-1 rounded-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10`}>
+                    {allStar1}
+                  </div>
                 </div>
               </div>
             </div>
@@ -551,18 +560,191 @@ const handleSelectStar = async (star) => {
             <span className='font-action text-customWhite font-medium text-4xl ml-3'>{averageRating.toFixed(2)}</span>
           </div>
         </div>
-      </div>
+          <span className='flex-col py-1 px-11 rounded-xl text-customWhite font-action font-semibold text-xl hidden md:flex xl:flex 2xl:hidden'>
+            Comment Section ({comments.length})
+          </span>
+          <div className='flex flex-row mt-1 gap-1'>
+            <button 
+              onClick={() => {
+                if (currentComment == 1) {
+                  setCurrentComment(currentComment - 1);
+                }
+              }}
+              className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
+                ${currentComment == 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+            ❮</button>
+            <div onClick={handleDivComments}
+                className='flex flex-row justify-center items-center border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
+              <input
+                type="text"
+                maxLength={2}
+                value={currentComment + 1}
+                ref={commentRef}
+                onChange={handleChangeInput}
+                className='w-2 outline-none text-end'
+                onClick={handleDivComments}
+              />
+            /{Math.floor(comments.length / 11) + 1}
+            </div>
+            <button 
+              onClick={() => {
+                const maxPage = Math.floor(comments.length / 11);
+                if (currentComment < maxPage) {
+                  setCurrentComment(currentComment + 1);
+                }
+              }}  
+              className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
+                ${currentComment >= Math.floor(comments.length / 11) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+            ❯</button>
+            <div className="relative flex justify-end w-30">
+              <button                
+                ref={filterTagBoxRef}
+                onClick={() => setShowTagBox(prev => !prev)}
+                onMouseEnter={() => setHoveredFilter(true)}
+                onMouseLeave={() => setHoveredFilter(false)}
+                className='border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
+                <img
+                  src="/filter_blue.svg"
+                  className={`absolute ${hoveredFilter ? "opacity-100" : "opacity-0"}`}
+                  width="25" height="15"
+                />
+                <img src="/filter_white.svg" width="25" height="15" />
+              </button>
+              {showTagBox &&
+                <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-35 bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
+                  <div className="absolute -top-2 right-7 w-3 h-3 bg-customBlue rotate-45 border-s-2 border-t-2 border-s-customWhite border-t-customWhite"></div>
+                  {tagOptions.map((tag, index) => (
+                    <label key={index} className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={selectedTag === tag}
+                        onChange={() => handleTagSelect(tag, 'tag')}
+                        className="appearance-none w-3 h-3 rounded-full border-2 border-customWhite checked:bg-customWhite checked:border-transparent cursor-pointer"
+                      />
+                      <span className="font-prompt text-customWhite text-xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleTagSelect(tag, 'tag');
+                        }}>
+                        {tag}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              }
+            </div>
+          </div>
+          {/* Comments Display */}
+          <div className='bg-customWhite w-75 rounded h-full mt-4 py-4 pl-2 mx-4 pr-2 overflow-y-auto'>
+            {comments.length === 0 ? (
+              <p className='text-gray-500 text-center mt-8'>No comments yet. Be the first to comment!</p>
+            ) : (
+              filteredComments.map((comment) => (
+                <div key={comment.id} className='mb-4 pl-1 border-b border-gray-200 last:border-b-0'>
+                  <div className='flex justify-between items-start mb-2'>
+                    <h4 className='font-semibold text-customBlue'>{comment.name}</h4>
+                    <div className='text-xs text-gray-500 text-end'>
+                      <span>{formatTimestamp(comment.createdAt)}</span>
+                      <br />
+                      <span>Page {comment.page}</span>
+                    </div>
+                  </div>
+                  <p className='text-gray-700 text-sm leading-relaxed'>{comment.message}</p>
+                  <div className='flex flex-row gap-1 mt-1 justify-end'>
+                    <button  
+                      onClick={() => handleLikeDislike(comment.id, 'like')}
+                      className={`cursor-pointer rounded border-customBlack px-1 flex flex-row gap-1 ${userInteractions[comment.id] === 'like' ? 'border-customGreen border-3 text-customGreen' : 'border-customBlack border-1 text-customBlack'} `}>
+                      {userInteractions[comment.id] === 'like' ?
+                      (<img src="/like_green.svg" width="15" height="15" />):
+                      (<img src="/like_black.svg" width="15" height="15" />)}  
+                      <span>{comment.like}</span>
+                    </button>  
+                    <button 
+                      onClick={() => handleLikeDislike(comment.id, 'dislike')}
+                      className={`cursor-pointer rounded border-customBlack px-1 flex flex-row gap-1 ${userInteractions[comment.id] === 'dislike' ? 'border-customRed border-3 text-customRed' : 'border-customBlack border-1 text-customBlack'} `}>
+                      {userInteractions[comment.id] === 'dislike' ?
+                      (<img src="/dislike_red.svg" width="15" height="15" />):
+                      (<img src="/dislike_black.svg" width="15" height="15" />)}  
+                      <span>{comment.dislike}</span>
+                    </button>        
+                  </div>            
+                  <div className='h-0.25 w-full bg-gray-300 mt-2'></div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {/* Error Message */}
+          {error && (
+            <div className='text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
+          )}
+          
+          {/* Comment Form */}
+          {openComment ? (
+            <>
+              <div className='w-75 rounded flex flex-col mt-2 animate-swipeUP'>
+                <div className='flex flex-row'>
+                  <input
+                    type="text"
+                    placeholder="Enter Your Name"
+                    maxLength={50}
+                    value={nameComment}
+                    onChange={(e) => setNameComment(e.target.value)}
+                    className="text-left w-full h-sm border-2 border-customWhite bg-customBlue cursor-pointer py-1 px-3 rounded-sm text-customWhite placeholder-gray-300"
+                    required
+                  />
+                  <button 
+                    onClick={() => {
+                      setOpenComment(false);
+                      setError("");
+                      setNameComment("");
+                      setmsgComment("");
+                    }}
+                    className='flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 px-3 h-sm ml-2 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl'>
+                      X
+                  </button>
+                </div>
+                <textarea
+                  placeholder="Enter Your Comment"
+                  maxLength={500}
+                  value={msgComment}
+                  onChange={(e) => setmsgComment(e.target.value)}
+                  className="text-left w-full h-32 border-2 border-customWhite bg-customBlue cursor-pointer py-1 px-3 rounded-sm text-customWhite placeholder-gray-300 mt-2 resize-none"
+                  required
+                />
+                <div className='text-right text-customWhite text-xs mt-1'>
+                  {msgComment.length}/500
+                </div>
+              </div>
+              <button 
+                onClick={handleSubmitComment}
+                disabled={loading}
+                className={`z-50 flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-1 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}>
+                {loading ? 'Sending...' : 'Send Comment'}
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => setOpenComment(true)}
+              className='flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-4 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl'>
+                Add Comment
+            </button>
+          )}
+        </div>
       
       {/* Book Container */}
-      <div className="book-container relative w-197 h-174.75 rounded-xs border-8 border-customWhite">
+      <div className="book-container relative w-195 h-174 lg:w-227.5 lg:h-200 2xl:w-197 2xl:h-174.75 rounded-xs border-8 border-customWhite">
         {/* Left Page Behind */}
-        <div className="page h-full w-sm left-page z-0">
+        <div className="page h-full w-sm lg:w-md 2xl:w-sm  left-page z-0">
             <div className="bg-customWhite page-content">
                 {pages[currentPage - 2]?.content}
             </div>
         </div>
         {/* Left Page */}
-        <div className={`page h-full w-sm left-page z-10 ${flippingPage === 'left' ? 'flipping-left' : ''}`}>
+        <div className={`page h-full w-sm lg:w-md 2xl:w-sm left-page z-10 ${flippingPage === 'left' ? 'flipping-left' : ''}`}>
             <div 
                 className={`bg-customWhite page-content  ${currentPage > 0 && !flippingPage ? 'page-clickable' : currentPage === 0 ? 'page-disabled' : ''}`}
                 onClick={flipLeftPage}
@@ -576,7 +758,7 @@ const handleSelectStar = async (star) => {
         {/* Book Spine */}
         <div className="book-spine bg-customBlack"></div>
         {/* Right Page */}
-        <div className={`page h-full w-sm right-page z-10 ${flippingPage === 'right' ? 'flipping-right' : ''}`}>
+        <div className={`page h-full w-sm lg:w-md 2xl:w-sm  right-page z-10 ${flippingPage === 'right' ? 'flipping-right' : ''}`}>
             <div 
                 className={`bg-customWhite page-content ${currentPage < pages.length - 2 && !flippingPage ? 'page-clickable' : 'page-disabled'}`}
                 onClick={flipRightPage}
@@ -588,7 +770,7 @@ const handleSelectStar = async (star) => {
             </div>
         </div>
         {/* Right Page Behind */}
-        <div className="page h-full w-sm right-page z-0">
+        <div className="page h-full w-sm lg:w-md 2xl:w-sm right-page z-0">
             <div className="bg-customWhite page-content">
                 {pages[currentPage + 3]?.content}
             </div>
@@ -596,11 +778,11 @@ const handleSelectStar = async (star) => {
       </div>
       
       {/* Comment Section */}
-      <div className='bg-customBlue w-xs h-screen border-l-1 border-l-customWhite flex items-center flex-col'>
+      <div className='bg-customBlue w-xs h-screen border-l-1 border-l-customWhite items-center flex-col hidden md:hidden xl:hidden 2xl:flex'>
         <span className='flex flex-col py-1 px-11 mt-4 rounded-xl text-customWhite font-action font-semibold text-xl'>
           Comment Section ({comments.length})
         </span>
-        <div className='flex flex-row mt-4 gap-1'>
+        <div className='flex flex-row mt-1 gap-1'>
           <button 
             onClick={() => {
               if (currentComment == 1) {

@@ -458,7 +458,33 @@ const handleSelectStar = async (star) => {
           ❮
         </button>
         <div className='flex flex-col items-end my-2'>
-          <span className='text-customWhite font-action font-semibold text-2xl'>{selectedChapter}</span>
+          <div className="relative flex justify-end"
+            ref={filterChapterBoxRef}>
+            <button onClick={() => setShowChapterBox(prev => !prev)} className='text-customWhite font-action font-semibold text-2xl border-2 px-2 rounded-md'>{selectedChapter}</button>
+            {showChapterBox &&
+              <div className="absolute top-full mt-3.5 w-full bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
+                <div className="absolute -top-2 w-3 left-1/2 -translate-x-1/2 h-3 bg-customBlue rotate-45 border-s-2 border-t-2 border-s-customWhite border-t-customWhite"></div>
+                {chapterOptions.map((ch, index) => (
+                  <label key={index} className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={selectedChapter === ch}
+                      onChange={() => handleTagSelect(ch, 'chapter')}
+                      className="appearance-none w-3 h-3 rounded-full border-2 border-customWhite checked:bg-customWhite checked:border-transparent cursor-pointer"
+                    />
+                    <span className="font-prompt text-customWhite text-xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleTagSelect(ch, 'chapter');
+                        }}>
+                      {ch}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            }
+          </div>
           <div className='flex flex-row items-center justify-center'>
             <span className='font-action text-customWhite font-medium text-xl mr-1'>{views} Views</span>
             <img src="/views.svg" width="30" height="30" alt="views" />
@@ -677,9 +703,9 @@ const handleSelectStar = async (star) => {
                 className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
                   ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
               ❯</button>
-              <div className="relative flex justify-end w-full">
+              <div className="relative flex justify-end w-full"
+                  ref={filterTagBoxRef}>
                 <button                
-                  ref={filterTagBoxRef}
                   onClick={() => setShowTagBox(prev => !prev)}
                   onMouseEnter={() => setHoveredFilter(true)}
                   onMouseLeave={() => setHoveredFilter(false)}
@@ -828,9 +854,9 @@ const handleSelectStar = async (star) => {
           {closeLeftBar ? "❯" :"❮"}
           </button>
           </div>
-        <div className="relative flex justify-end">
+        <div className="relative flex justify-end"
+          ref={filterChapterBoxRef}>
         <button               
-          ref={filterChapterBoxRef}
           onClick={() => setShowChapterBox(prev => !prev)}
           className='w-60 flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1  mt-4 rounded-xl text-customWhite hover:text-customBlue'>
           <span className='font-action font-semibold text-lg '>{currentBookId.replace('chapter_', 'Chapter ')}</span>
@@ -847,7 +873,12 @@ const handleSelectStar = async (star) => {
                     onChange={() => handleTagSelect(ch, 'chapter')}
                     className="appearance-none w-3 h-3 rounded-full border-2 border-customWhite checked:bg-customWhite checked:border-transparent cursor-pointer"
                   />
-                  <span className="font-prompt text-customWhite text-xs">
+                  <span className="font-prompt text-customWhite text-xs"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleTagSelect(ch, 'chapter');
+                      }}>
                     {ch}
                   </span>
                 </label>
@@ -1003,9 +1034,9 @@ const handleSelectStar = async (star) => {
               className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
                 ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
             ❯</button>
-            <div className="relative flex justify-end w-30">
+            <div className="relative flex justify-end w-30"
+                ref={filterTagBoxRef}>
               <button                
-                ref={filterTagBoxRef}
                 onClick={() => setShowTagBox(prev => !prev)}
                 onMouseEnter={() => setHoveredFilter(true)}
                 onMouseLeave={() => setHoveredFilter(false)}
@@ -1222,9 +1253,9 @@ const handleSelectStar = async (star) => {
             className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
               ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
           ❯</button>
-          <div className="relative flex justify-end w-30">
+          <div className="relative flex justify-end w-30"
+              ref={filterTagBoxRef}>
             <button                
-              ref={filterTagBoxRef}
               onClick={() => setShowTagBox(prev => !prev)}
               onMouseEnter={() => setHoveredFilter(true)}
               onMouseLeave={() => setHoveredFilter(false)}

@@ -4,11 +4,16 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useParams, useNavigate } from 'react-router-dom';
 
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+         window.innerWidth <= 768;
+};
+
 // Configuration
 const CAMERA_CONFIG = {
   position: { x: 0.85, y: 2.7, z: 0 },
   rotation: { x: 0, y: 0, z: 0 },
-  fov: 70,
+  fov: isMobile() ? 110 : 70,
   near: 0.2,
   far: 1000
 };
@@ -54,6 +59,14 @@ const TRANSITION_CONFIG = {
   threshold: 0.01 // Distance threshold to stop transition
 };
 
+// Tooltip configuration
+const TOOLTIP_CONFIG = {
+  Book: "Open the first chapter of Floch Forster OVA",
+  Coffee: "Buy me a coffee ♥",
+  Note1: "Check the Note",
+  Note2: "Check the Social Credit"
+};
+
 let GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
 
 const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, onBackHome }) => {
@@ -65,6 +78,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
   const isTransitioning = useRef(false);
   const [currentCameraLock, setCurrentCameraLock] = useState("cube");
   const [enableCursorFollow, setEnableCursorFollow] = useState(true);
+  const [tooltip, setTooltip] = useState({ visible: false, text: "", x: 0, y: 0 });
   const lookAtTargetRef = useRef(null);
   const mountRef = useRef();
   const sceneObjectsRef = useRef({});
@@ -92,6 +106,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
       GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
       setCurrentCameraLock("cube");
       setEnableCursorFollow(true);
+      setTooltip({ visible: false, text: "", x: 0, y: 0 });
       transitionToPosition("cube");
     }
   }, [onBackHome]);
@@ -168,6 +183,13 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      // Update tooltip position
+      setTooltip(prev => ({
+        ...prev,
+        x: event.clientX,
+        y: event.clientY
+      }));
     };
 
     // Click handler
@@ -211,12 +233,14 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
               GLOWABLE_OBJECTS = [];
               setCurrentCameraLock("note1");
               transitionToPosition("note1", targetObject);
+              setTooltip({ visible: false, text: "", x: 0, y: 0 });
               onNote1Click?.();
               break;
             case "Note2":
               GLOWABLE_OBJECTS = [];
               setCurrentCameraLock("note2");
               transitionToPosition("note2", targetObject);
+              setTooltip({ visible: false, text: "", x: 0, y: 0 });
               onNote2Click?.();
               break;
             case "Book":
@@ -224,9 +248,11 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
               setCurrentCameraLock("book");
               transitionToPosition("book", null); // Don't set lookAt target for book
               setEnableCursorFollow(false);
+              setTooltip({ visible: false, text: "", x: 0, y: 0 });
               onBookClick?.();
               break;
             case "Coffee":
+              setTooltip({ visible: false, text: "", x: 0, y: 0 });
               onCoffeeClick?.();
               break;
           }
@@ -277,6 +303,26 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
         parent = parent.parent;
       }
       return false;
+    };
+
+    const getObjectName = (object) => {
+      if (object.name) {
+        const foundObject = GLOWABLE_OBJECTS.find(name => 
+          object.name.toLowerCase().includes(name.toLowerCase())
+        );
+        if (foundObject) return foundObject;
+      }
+      let parent = object.parent;
+      while (parent) {
+        if (parent.name) {
+          const foundObject = GLOWABLE_OBJECTS.find(name => 
+            parent.name.toLowerCase().includes(name.toLowerCase())
+          );
+          if (foundObject) return foundObject;
+        }
+        parent = parent.parent;
+      }
+      return null;
     };
 
     // Animate
@@ -343,6 +389,16 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
               hoveredObject = root;
             }
 
+            // Show tooltip
+            const objectName = getObjectName(intersected);
+            if (objectName && TOOLTIP_CONFIG[objectName]) {
+              setTooltip(prev => ({
+                ...prev,
+                visible: true,
+                text: TOOLTIP_CONFIG[objectName]
+              }));
+            }
+
             isHovering = true;
             renderer.domElement.style.cursor = "pointer";
           } else {
@@ -351,6 +407,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
               if (hoveredObject) removeGlowEffect(hoveredObject);
               hoveredObject = null;
               renderer.domElement.style.cursor = "default";
+              setTooltip(prev => ({ ...prev, visible: false }));
             }
           }
         } else {
@@ -359,6 +416,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
             if (hoveredObject) removeGlowEffect(hoveredObject);
             hoveredObject = null;
             renderer.domElement.style.cursor = "default";
+            setTooltip(prev => ({ ...prev, visible: false }));
           }
         }
       }
@@ -395,7 +453,23 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
     };
   }, [currentCameraLock, enableCursorFollow, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
 
-  return <div className="w-full h-screen z-10" ref={mountRef}/>;
+  return (
+    <div className="w-full h-screen z-10 relative" ref={mountRef}>
+      {/* Tooltip */}
+      {tooltip.visible && (
+        <div 
+          className="absolute bg-black bg-opacity-80 text-white px-3 py-2 rounded-lg text-sm pointer-events-none z-50 transition-opacity duration-200"
+          style={{ 
+            left: tooltip.x + 10, 
+            top: tooltip.y - 35,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          {tooltip.text}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default memo(ThreeScene);

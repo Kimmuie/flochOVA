@@ -1,11 +1,19 @@
 [
   {
     "type": "image",
-    "image": "/FlochOVA1.jpg"
+    "image": "chapter1/CH1_Page.jpg"
   },
   {
     "type": "image",
-    "image": "/FlochOVA2.jpg"
+    "image": "chapter1/CH1_Page1.jpg"
+  },
+    {
+    "type": "image",
+    "image": "chapter1/CH1_Page2.jpg"
+  },
+    {
+    "type": "image",
+    "image": "chapter1/CH1_Page3.jpg"
   },
   {
     "type": "image", 

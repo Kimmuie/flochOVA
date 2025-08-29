@@ -76,12 +76,15 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
     rotation: new THREE.Euler(CAMERA_CONFIG.rotation.x, CAMERA_CONFIG.rotation.y, CAMERA_CONFIG.rotation.z)
   });
   const isTransitioning = useRef(false);
-  const [currentCameraLock, setCurrentCameraLock] = useState("cube");
+  const currentCameraLockRef = useRef("cube"); // Use ref instead of state to avoid re-renders
   const [enableCursorFollow, setEnableCursorFollow] = useState(true);
   const [tooltip, setTooltip] = useState({ visible: false, text: "", x: 0, y: 0 });
   const lookAtTargetRef = useRef(null);
   const mountRef = useRef();
   const sceneObjectsRef = useRef({});
+  
+  // Keep track of the interactive object for back home functionality
+  const interactiveObjectRef = useRef(null);
 
   // Function to smoothly transition camera to target position
   const transitionToPosition = (targetKey, targetObject = null) => {
@@ -101,16 +104,29 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
     }
   };
 
+  // Handle back home - this will NOT recreate the scene
   useEffect(() => {
     if (onBackHome) {
+      // Reset the global state
       GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
-      setCurrentCameraLock("cube");
+      currentCameraLockRef.current = "cube";
       setEnableCursorFollow(true);
       setTooltip({ visible: false, text: "", x: 0, y: 0 });
+      
+      // Find cube object and set it as lookAt target
+      if (interactiveObjectRef.current) {
+        interactiveObjectRef.current.traverse((child) => {
+          if (child.name && child.name.toLowerCase().includes("cube")) {
+            lookAtTargetRef.current = child;
+          }
+        });
+      }
+      
       transitionToPosition("cube");
     }
   }, [onBackHome]);
 
+  // Main scene setup - removed currentCameraLock from dependencies
   useEffect(() => {
     // Scene setup
     const scene = new THREE.Scene();
@@ -121,9 +137,19 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
       CAMERA_CONFIG.far
     );
 
-    // Clean previous canvas if any
-    while (mountRef.current.firstChild) {
-      mountRef.current.removeChild(mountRef.current.firstChild);
+    // Clean previous canvas if any - with better error handling
+    if (mountRef.current) {
+      // Create a copy of children to avoid live NodeList issues
+      const children = Array.from(mountRef.current.children);
+      children.forEach(child => {
+        try {
+          if (mountRef.current.contains(child)) {
+            mountRef.current.removeChild(child);
+          }
+        } catch (error) {
+          console.warn('Error removing child node:', error);
+        }
+      });
     }
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -159,13 +185,14 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
 
     loader.load("/model.glb", (gltf) => {
       interactiveObject = gltf.scene;
+      interactiveObjectRef.current = interactiveObject;
 
       interactiveObject.traverse((child) => {
         if (child.isMesh) {
           originalMaterials.set(child, child.material.clone());
         }
         // Set initial lookAt target based on current camera lock
-        if (child.name && child.name.toLowerCase().includes(currentCameraLock)) {
+        if (child.name && child.name.toLowerCase().includes(currentCameraLockRef.current)) {
           lookAtTargetRef.current = child;
         }
       });
@@ -231,21 +258,21 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
           switch(objectName) {
             case "Note1":
               GLOWABLE_OBJECTS = [];
-              setCurrentCameraLock("note1");
+              currentCameraLockRef.current = "note1";
               transitionToPosition("note1", targetObject);
               setTooltip({ visible: false, text: "", x: 0, y: 0 });
               onNote1Click?.();
               break;
             case "Note2":
               GLOWABLE_OBJECTS = [];
-              setCurrentCameraLock("note2");
+              currentCameraLockRef.current = "note2";
               transitionToPosition("note2", targetObject);
               setTooltip({ visible: false, text: "", x: 0, y: 0 });
               onNote2Click?.();
               break;
             case "Book":
               GLOWABLE_OBJECTS = [];
-              setCurrentCameraLock("book");
+              currentCameraLockRef.current = "book";
               transitionToPosition("book", null); // Don't set lookAt target for book
               setEnableCursorFollow(false);
               setTooltip({ visible: false, text: "", x: 0, y: 0 });
@@ -354,7 +381,7 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
         const targetOffsetX = mouse.x * MOUSE_CONFIG.maxRotation;
 
         // Get the base position for current camera lock
-        const basePosition = CAMERA_POSITIONS[currentCameraLock] || CAMERA_POSITIONS.cube;
+        const basePosition = CAMERA_POSITIONS[currentCameraLockRef.current] || CAMERA_POSITIONS.cube;
         
         // Smoothly interpolate camera position with mouse offset
         camera.position.x = THREE.MathUtils.lerp(
@@ -442,16 +469,28 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", handleResize);
-      renderer.domElement.removeEventListener("click", onMouseClick);
-      if (mountRef.current?.contains(renderer.domElement)) {
-        mountRef.current.removeChild(renderer.domElement);
+      if (renderer.domElement) {
+        renderer.domElement.removeEventListener("click", onMouseClick);
       }
+      
+      // Safe cleanup
+      if (mountRef.current && renderer.domElement) {
+        try {
+          if (mountRef.current.contains(renderer.domElement)) {
+            mountRef.current.removeChild(renderer.domElement);
+          }
+        } catch (error) {
+          console.warn('Error during cleanup:', error);
+        }
+      }
+      
       renderer.dispose();
       scene.clear();
       originalMaterials.clear();
       sceneObjectsRef.current = {};
+      interactiveObjectRef.current = null;
     };
-  }, [currentCameraLock, enableCursorFollow, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
+  }, [enableCursorFollow, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]); // Removed currentCameraLock
 
   return (
     <div className="w-full h-screen z-10 relative" ref={mountRef}>

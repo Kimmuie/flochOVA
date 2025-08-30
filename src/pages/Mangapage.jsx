@@ -7,6 +7,7 @@ import chapter_1Json from '../chapters/chapter_1.json';
 import chapter_2Json from '../chapters/chapter_2.json';
 
 const InteractiveBook = () => {
+  const { chapterId } = useParams();
   const navigate = useNavigate();
   const [views, setViews] = useState(0);
   const [currentStar, setCurrentStar] = useState(0);
@@ -36,7 +37,25 @@ const InteractiveBook = () => {
   const [showTagBox, setShowTagBox] = useState(false);
   const [showStarPhoneBox, setShowStarPhoneBox] = useState(false);
   const [selectedTag, setSelectedTag] = useState('Top Comments');
-  const [selectedChapter, setSelectedChapter] = useState('CH.1 : The Hatred');
+
+  const getChapterNameFromId = (id) => {
+    switch (id) {
+      case 'chapter_1':
+        return 'CH.1 : Buried In The Memory';
+      case 'chapter_2':
+        return 'CH.2 : The Substitute';
+      case 'chapter_3':
+        return 'CH.3 : The Realization';
+      case 'chapter_4':
+        return 'CH.4 : The Dedication';
+      default:
+        return 'CH.1 : Buried In The Memory';
+    }
+  };
+
+  const [selectedChapter, setSelectedChapter] = useState(() => {
+    return getChapterNameFromId(chapterId);
+  });
   const [filteredComments, setFilteredComments] = useState([]);
   const filterStarPhoneBoxRef = useRef(null);
   const filterTagBoxRef = useRef(null);
@@ -45,7 +64,7 @@ const InteractiveBook = () => {
   const commentRef = useRef(null);
   const starPhoneOptions = [ 5, 4, 3, 2, 1 ];
   const tagOptions = ['Top Comments', 'Worst Comments', 'Newest Comments', 'Oldest Comments'];
-  const chapterOptions = ['CH.1 : The Hatred', 'CH.2 : The Subsitute', 'CH.3 : The Realization', 'CH.4 : The Dedication'];
+  const chapterOptions = ['CH.1 : Buried In The Memory', 'CH.2 : The Subsitute', 'CH.3 : The Realization', 'CH.4 : The Dedication'];
   // Get book ID from URL params or use a default
   const { bookId } = useParams();
   const currentBookId = `chapter_${selectedChapter.match(/\d+/)?.[0] || 1}`;
@@ -81,6 +100,13 @@ const InteractiveBook = () => {
       pageRef.current.select();
     }
   };
+    
+  const handleChapterChange = (chapter) => {
+    const chapterNumber = chapter.match(/\d+/)?.[0];
+    const newChapterId = `chapter_${chapterNumber}`;
+    navigate(`/manga/${newChapterId}`, { replace: true });
+    setSelectedChapter(chapter);
+  };
 
   const handleTagSelect = async (value, type) => {
     console.log('handleTagSelect called with:', value, type)
@@ -89,7 +115,7 @@ const InteractiveBook = () => {
       setShowTagBox(false);
     }
     if (type === 'chapter'){
-      setSelectedChapter(value);
+      handleChapterChange(value);
       setShowChapterBox(false);
       setCurrentPage(0);
       setCurrentStar(0);
@@ -784,7 +810,7 @@ const handleSelectStar = async (star) => {
             
             {/* Error Message */}
             {error && (
-              <div className='text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
+              <div className='md:hidden flex text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
             )}
             
             {/* Comment Form */}
@@ -860,7 +886,7 @@ const handleSelectStar = async (star) => {
           onClick={() => setShowChapterBox(prev => !prev)}
           className='w-60 flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1  mt-4 rounded-xl text-customWhite hover:text-customBlue'>
           <span className='font-action font-semibold text-lg '>{currentBookId.replace('chapter_', 'Chapter ')}</span>
-          <span className='font-action font-semibold text-2xl'>{selectedChapter.split(':')[1]?.trim() || ''}</span>
+          <span className='font-action font-semibold text-xl'>{selectedChapter.split(':')[1]?.trim() || ''}</span>
         </button>
           {showChapterBox &&
             <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-full bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
@@ -1115,7 +1141,7 @@ const handleSelectStar = async (star) => {
           
           {/* Error Message */}
           {error && (
-            <div className='text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
+            <div className='flex 2xl:hidden text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
           )}
           
           {/* Comment Form */}
@@ -1334,7 +1360,7 @@ const handleSelectStar = async (star) => {
         
         {/* Error Message */}
         {error && (
-          <div className='text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
+          <div className='2xl:flex hidden text-red-400 text-sm mt-2 px-4 text-center'>{error}</div>
         )}
         
         {/* Comment Form */}

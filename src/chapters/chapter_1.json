@@ -1,22 +1,38 @@
 [
   {
     "type": "image",
-    "image": "chapter1/CH1_Page.jpg"
+    "image": "/chapter1/CH1_Page.jpg"
   },
   {
     "type": "image",
-    "image": "chapter1/CH1_Page1.jpg"
+    "image": "/chapter1/CH1_Page1.jpg"
   },
     {
     "type": "image",
-    "image": "chapter1/CH1_Page2.jpg"
+    "image": "/chapter1/CH1_Page2.jpg"
   },
     {
     "type": "image",
-    "image": "chapter1/CH1_Page3.jpg"
+    "image": "/chapter1/CH1_Page3.jpg"
   },
-  {
-    "type": "image", 
-    "image": "/images/chapter1-scene.jpg"
+    {
+    "type": "image",
+    "image": "/chapter1/CH1_Page4.jpg"
+  },
+    {
+    "type": "image",
+    "image": "/chapter1/CH1_Page5.jpg"
+  },
+    {
+    "type": "image",
+    "image": "/chapter1/CH1_Page6.jpg"
+  },
+    {
+    "type": "image",
+    "image": "/chapter1/CH1_Page7.jpg"
+  },
+    {
+    "type": "image",
+    "image": "/chapter1/CH1_Page8.jpg"
   }
 ]

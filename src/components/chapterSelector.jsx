@@ -7,7 +7,7 @@ const navigate = useNavigate();
 
   return (
     <div className="absolute w-full h-full flex justify-center items-center z-20 animate-fadeDown">
-      <div className="absolute inset-0 bg-customWhite opacity-80" onClick={onClose}></div>
+      <div className="cursor-pointer absolute inset-0 bg-customWhite opacity-80" onClick={onClose}></div>
         <div className="flex flex-col gap-3">
             <button onClick={() => navigate('/manga/chapter_1')}
                 className='cursor-pointer z-50 hover:bg-customWhite bg-customBlue hover:text-customBlue text-customWhite font-action font-semibold text-2xl border-2 py-2 px-4 rounded-xl'>

@@ -167,5 +167,5 @@ html, body, #root {
   }
   
   .page-disabled {
-    cursor: not-allowed;
+    cursor: no-drop;
   }

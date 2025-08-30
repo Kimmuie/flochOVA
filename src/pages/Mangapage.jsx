@@ -704,7 +704,7 @@ const handleSelectStar = async (star) => {
                   }
                 }}
                 className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
-                  ${currentComment == 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                  ${currentComment == 0 ? 'cursor-no-drop opacity-50' : 'cursor-pointer'}`}>
               ❮</button>
               <div onClick={handleDivComments}
                   className='flex flex-row justify-center items-center border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
@@ -727,7 +727,7 @@ const handleSelectStar = async (star) => {
                   }
                 }}  
                 className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
-                  ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                  ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-no-drop opacity-50' : 'cursor-pointer'}`}>
               ❯</button>
               <div className="relative flex justify-end w-full"
                   ref={filterTagBoxRef}>
@@ -854,7 +854,7 @@ const handleSelectStar = async (star) => {
                   onClick={handleSubmitComment}
                   disabled={loading}
                   className={`z-50 flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-full mt-1 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl ${
-                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                    loading ? 'opacity-50 cursor-no-drop' : ''
                   }`}>
                   {loading ? 'Sending...' : 'Send Comment'}
                 </button>
@@ -1035,7 +1035,7 @@ const handleSelectStar = async (star) => {
                 }
               }}
               className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
-                ${currentComment == 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                ${currentComment == 0 ? 'cursor-no-drop opacity-50' : 'cursor-pointer'}`}>
             ❮</button>
             <div onClick={handleDivComments}
                 className='flex flex-row justify-center items-center border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
@@ -1058,7 +1058,7 @@ const handleSelectStar = async (star) => {
                 }
               }}  
               className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
-                ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-no-drop opacity-50' : 'cursor-pointer'}`}>
             ❯</button>
             <div className="relative flex justify-end w-30"
                 ref={filterTagBoxRef}>
@@ -1185,7 +1185,7 @@ const handleSelectStar = async (star) => {
                 onClick={handleSubmitComment}
                 disabled={loading}
                 className={`hidden md:flex xl:flex 2xl:hidden z-50 flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-1 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                  loading ? 'opacity-50 cursor-no-drop' : ''
                 }`}>
                 {loading ? 'Sending...' : 'Send Comment'}
               </button>
@@ -1254,7 +1254,7 @@ const handleSelectStar = async (star) => {
               }
             }}
             className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
-              ${currentComment == 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+              ${currentComment == 0 ? 'cursor-no-drop opacity-50' : 'cursor-pointer'}`}>
           ❮</button>
           <div onClick={handleDivComments}
               className='flex flex-row justify-center items-center border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1 px-3 rounded-xl text-customWhite hover:text-customBlue'>
@@ -1277,7 +1277,7 @@ const handleSelectStar = async (star) => {
               }
             }}  
             className={`border-2 border-customWhite bg-customBlue hover:bg-customWhite py-1 px-3 rounded-xl text-customWhite hover:text-customBlue 
-              ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+              ${currentComment >= Math.floor(comments.length / 10) ? 'cursor-no-drop opacity-50' : 'cursor-pointer'}`}>
           ❯</button>
           <div className="relative flex justify-end w-30"
               ref={filterTagBoxRef}>
@@ -1404,7 +1404,7 @@ const handleSelectStar = async (star) => {
               onClick={handleSubmitComment}
               disabled={loading}
               className={`z-50 flex flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-1 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
+                loading ? 'opacity-50 cursor-no-drop' : ''
               }`}>
               {loading ? 'Sending...' : 'Send Comment'}
             </button>

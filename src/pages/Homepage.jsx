@@ -34,6 +34,7 @@ const Homepage = () => {
   const handleBackToHome = () => {
     setOpenNote1(false);
     setOpenNote2(false);
+    setOpenChapter(false)
     setOpenBook(false);
     setBackHome(true);
   };

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, memo } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useParams, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 
 const isMobile = () => {
   return /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -107,11 +108,8 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
       GLOWABLE_OBJECTS = ["Book", "Coffee", "Note1", "Note2"];
       setEnableCursorFollow(true);
       setTooltip({ visible: false, text: "", x: 0, y: 0 });
-       setTimeout(() => {  
-        setCurrentCameraLock("cube");
-        transitionToPosition("cube");
-    }, 120); 
-
+      setCurrentCameraLock("cube");
+      transitionToPosition("cube");
     }
   }, [onBackHome]);
 
@@ -168,10 +166,10 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
         if (child.isMesh) {
           originalMaterials.set(child, child.material.clone());
         }
-        // Set initial lookAt target based on current camera lock
         if (child.name && child.name.toLowerCase().includes(currentCameraLock)) {
           lookAtTargetRef.current = child;
         }
+
       });
 
       scene.add(interactiveObject);
@@ -458,21 +456,24 @@ const ThreeScene = ({ onNote1Click, onNote2Click, onBookClick, onCoffeeClick, on
   }, [currentCameraLock, enableCursorFollow, onNote1Click, onNote2Click, onBookClick, onCoffeeClick]);
 
   return (
+    <>
     <div className="w-full h-screen z-10 relative" ref={mountRef}>
-      {/* Tooltip */}
-      {tooltip.visible && (
-        <div 
-          className="absolute bg-black bg-opacity-80 text-white px-3 py-2 rounded-lg text-sm pointer-events-none z-50 transition-opacity duration-200"
-          style={{ 
-            left: tooltip.x + 10, 
-            top: tooltip.y - 35,
-            transform: 'translateX(-50%)'
-          }}
-        >
-          {tooltip.text}
-        </div>
-      )}
+
     </div>
+    {tooltip.visible && createPortal(
+      <div 
+        className="absolute bg-black bg-opacity-80 text-white px-3 py-2 rounded-lg text-sm pointer-events-none z-50 transition-opacity duration-200"
+        style={{ 
+          left: tooltip.x + 10, 
+          top: tooltip.y - 35,
+          transform: 'translateX(-50%)'
+        }}
+      >
+        {tooltip.text}
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
 

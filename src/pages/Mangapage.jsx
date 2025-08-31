@@ -5,6 +5,7 @@ import { db } from '../components/firebase';
 import { createPortal } from 'react-dom';
 import chapter_1Json from '../chapters/chapter_1.json';
 import chapter_2Json from '../chapters/chapter_2.json';
+import LoadingScreen from '../components/LoadingScreen';
 
 const InteractiveBook = () => {
   const { chapterId } = useParams();
@@ -476,6 +477,8 @@ const handleSelectStar = async (star) => {
   };
 
   return (
+    <>
+    <LoadingScreen />
     <div className="w-screen h-screen bg-gradient-to-b from-customDarkBlue to-customDarkBlue flex items-start sm:items-center justify-start md:justify-center xl:justify-center 2xl:justify-between  overflow-hidden">
       <div className='w-full h-full flex sm:hidden flex-col'>
       {/* TopNav */}
@@ -1418,6 +1421,7 @@ const handleSelectStar = async (star) => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

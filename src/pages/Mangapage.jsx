@@ -6,7 +6,6 @@ import { createPortal } from 'react-dom';
 import chapter_1Json from '../chapters/chapter_1.json';
 import chapter_2Json from '../chapters/chapter_2.json';
 import LoadingScreen from '../components/LoadingScreen';
-
 const InteractiveBook = () => {
   const { chapterId } = useParams();
   const navigate = useNavigate();
@@ -489,7 +488,7 @@ const handleSelectStar = async (star) => {
         <div className='flex flex-col items-end my-2'>
           <div className="relative flex justify-end"
             ref={filterChapterBoxRef}>
-            <button onClick={() => setShowChapterBox(prev => !prev)} className='text-customWhite font-action font-semibold text-2xl border-2 px-2 rounded-md'>{selectedChapter}</button>
+            <button onClick={() => setShowChapterBox(prev => !prev)} className='text-customWhite font-action font-semibold text-xl border-2 px-2 rounded-md'>{selectedChapter}</button>
             {showChapterBox &&
               <div className="absolute top-full mt-3.5 w-full bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
                 <div className="absolute -top-2 w-3 left-1/2 -translate-x-1/2 h-3 bg-customBlue rotate-45 border-s-2 border-t-2 border-s-customWhite border-t-customWhite"></div>
@@ -888,8 +887,8 @@ const handleSelectStar = async (star) => {
         <button               
           onClick={() => setShowChapterBox(prev => !prev)}
           className='w-60 flex flex-col border-2 border-customWhite bg-customBlue hover:bg-customWhite cursor-pointer py-1  mt-4 rounded-xl text-customWhite hover:text-customBlue'>
-          <span className='font-action font-semibold text-lg '>{currentBookId.replace('chapter_', 'Chapter ')}</span>
-          <span className='font-action font-semibold text-xl'>{selectedChapter.split(':')[1]?.trim() || ''}</span>
+          <span className='font-action font-semibold text-lg justify-center items-center'>{currentBookId.replace('chapter_', 'Chapter ')}</span>
+          <span className='font-action font-semibold text-xl justify-center items-center'>{selectedChapter.split(':')[1]?.trim() || ''}</span>
         </button>
           {showChapterBox &&
             <div className="absolute top-full mt-3.5 left-2 md:left-1/2 -translate-x-1/2 w-full bg-customBlue p-2 flex flex-col gap-1 rounded-sm border-2 border-customWhite z-50">
@@ -1196,7 +1195,7 @@ const handleSelectStar = async (star) => {
           ) : (
             <button 
               onClick={() => setOpenComment(true)}
-              className='flex-col border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-4 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl hidden md:flex xl:flex 2xl:hidden'>
+              className='flex-col items-center border-2 border-customWhite bg-customWhite hover:bg-customBlue cursor-pointer py-1 w-75 mt-4 rounded-sm text-customBlue hover:text-customWhite font-action font-semibold text-2xl hidden md:flex xl:flex 2xl:hidden'>
                 Add Comment
             </button>
           )}

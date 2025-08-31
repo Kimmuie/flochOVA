@@ -6,7 +6,7 @@ const Note2 = ({ openNote2, onClose }) => {
   return (
     <div className="absolute w-full h-full flex justify-center items-center z-20">
       <div className="absolute inset-0 bg-customWhite opacity-80 cursor-pointer" onClick={onClose}></div>
-      <div className="relative text-lg text-customBlack font-action w-full max-w-xl">
+      <div className="relative text-lg text-customBlack font-action w-full max-w-xl px-4">
           The Website, Manga Panel, and Storyline arrange by
           <br />
           <div className="flex flex-row gap-4">

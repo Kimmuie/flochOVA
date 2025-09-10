@@ -13,8 +13,6 @@
 
 💡 If you’d like to support the project, you can leave a tip on [Buy Me a Coffee](https://coff.ee/kimmue).
 Thank you for understanding, and enjoy the story!
-
-*🗣 Note: The platform currently supports the Thai language only, including client agreements.*  
 ----------- Click here to read [FlochForsterOVA](https://flochova-ca6b7.web.app/) ----------- 
 <br>
 <br>

@@ -12,7 +12,7 @@
 ⚠️ Disclaimer: This is a non-profit, fan-created project made purely out of passion and hobby. It does not change or replace any canon events from Attack on Titan. If any copyright issues arise, this site will be taken down immediately out of respect for the original creators.
 
 💡 If you’d like to support the project, you can leave a tip on [Buy Me a Coffee](https://coff.ee/kimmue).
-Thank you for understanding, and enjoy the story!
+Thank you for understanding, and enjoy the story!  
 ----------- Click here to read [FlochForsterOVA](https://flochova-ca6b7.web.app/) ----------- 
 <br>
 <br>

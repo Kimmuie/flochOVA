@@ -3,7 +3,7 @@
 ### What is [FlochForsterOVA](https://flochova-ca6b7.web.app/)?
 **FlochForsterOVA** is a fan-made web platform dedicated to exploring the story of Floch Forster from Attack on Titan. It provides a space to experience a non-canon OVA that expands on his character, introducing original storylines and additional characters to deepen the narrative and emotional impact.
 
-**Key features include:**
+**Key features include:**  
 📖 OVA Chapters & Episodes – Read fan-created stories expanding Floch’s journey.  
 🎭 Original Characters – Discover new personalities woven into the narrative.  
 🎨 Art & Visuals – Featuring artwork traced or inspired by anime sources.  
